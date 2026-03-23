@@ -225,19 +225,23 @@ jobs:
           RUBY
           )
 
-          # Clone tap repo using gh CLI (avoids token-in-URL issues)
-          gh repo clone NewTurn2017/homebrew-tap "$RUNNER_TEMP/homebrew-tap"
+          # Configure git credential helper for tap repo access
+          git config --global credential.helper store
+          echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+
+          git clone https://github.com/NewTurn2017/homebrew-tap.git "$RUNNER_TEMP/homebrew-tap"
           mkdir -p "$RUNNER_TEMP/homebrew-tap/Casks"
           echo "$FORMULA" > "$RUNNER_TEMP/homebrew-tap/Casks/voiceink.rb"
 
           cd "$RUNNER_TEMP/homebrew-tap"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Configure push credentials via credential helper
-          git config credential.helper '!f() { echo "password=$GH_TOKEN"; echo "username=x-access-token"; }; f'
           git add Casks/voiceink.rb
           git diff --cached --quiet || git commit -m "Update voiceink to $VERSION"
           git push origin main
+
+          # Cleanup credentials
+          rm -f ~/.git-credentials
 
           echo "✅ Homebrew tap updated to $VERSION"
 
