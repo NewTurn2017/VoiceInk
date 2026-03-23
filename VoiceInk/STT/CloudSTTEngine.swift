@@ -3,6 +3,7 @@ import Foundation
 final class CloudSTTEngine: NSObject, STTEngine, URLSessionWebSocketDelegate {
     var onTranscript: ((String) -> Void)?
     var onStatusChange: ((STTStatus) -> Void)?
+    var onAudioLevel: ((Float) -> Void)?
     private(set) var currentStatus: STTStatus = .idle
 
     private let keychainManager: KeychainManager
@@ -133,6 +134,22 @@ final class CloudSTTEngine: NSObject, STTEngine, URLSessionWebSocketDelegate {
 
     private func sendAudioData(_ data: Data) {
         guard isConnected else { return }
+
+        // Compute audio energy from Int16 samples
+        data.withUnsafeBytes { rawBuffer in
+            guard let baseAddress = rawBuffer.baseAddress else { return }
+            let int16Buffer = baseAddress.assumingMemoryBound(to: Int16.self)
+            let sampleCount = data.count / 2
+            guard sampleCount > 0 else { return }
+            var sum: Float = 0
+            for i in 0..<sampleCount {
+                sum += abs(Float(int16Buffer[i]) / Float(Int16.max))
+            }
+            let energy = sum / Float(sampleCount)
+            DispatchQueue.main.async { [weak self] in
+                self?.onAudioLevel?(energy)
+            }
+        }
 
         let base64Audio = data.base64EncodedString()
         let message: [String: Any] = [

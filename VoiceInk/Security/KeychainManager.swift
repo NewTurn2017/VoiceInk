@@ -69,15 +69,6 @@ final class KeychainManager {
         getAPIKey(for: service) != nil
     }
 
-    /// On first launch, migrate API key from environment variable to Keychain
-    func migrateFromEnvironmentIfNeeded() {
-        guard !hasAPIKey(for: .elevenLabs),
-              let envKey = ProcessInfo.processInfo.environment["ELEVENLABS_API_KEY"],
-              !envKey.isEmpty else {
-            return
-        }
-        try? saveAPIKey(envKey, for: .elevenLabs)
-    }
 }
 
 enum KeychainError: LocalizedError {

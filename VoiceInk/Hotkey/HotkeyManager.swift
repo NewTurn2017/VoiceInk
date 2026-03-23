@@ -3,6 +3,7 @@ import Cocoa
 
 final class HotkeyManager {
     var onHotkeyPressed: (() -> Void)?
+    var onHotkeyReleased: (() -> Void)?
 
     private var hotKeyRef: EventHotKeyRef?
 
@@ -36,16 +37,31 @@ final class HotkeyManager {
             return
         }
 
-        var eventType = EventTypeSpec(
-            eventClass: OSType(kEventClassKeyboard),
-            eventKind: UInt32(kEventHotKeyPressed)
-        )
+        // Register for both key press and release events
+        var eventTypes = [
+            EventTypeSpec(
+                eventClass: OSType(kEventClassKeyboard),
+                eventKind: UInt32(kEventHotKeyPressed)
+            ),
+            EventTypeSpec(
+                eventClass: OSType(kEventClassKeyboard),
+                eventKind: UInt32(kEventHotKeyReleased)
+            )
+        ]
 
-        let handler: EventHandlerUPP = { _, _, userData -> OSStatus in
-            guard let userData = userData else { return OSStatus(eventNotHandledErr) }
+        let handler: EventHandlerUPP = { _, event, userData -> OSStatus in
+            guard let userData = userData, let event = event else {
+                return OSStatus(eventNotHandledErr)
+            }
             let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
+            let eventKind = GetEventKind(event)
+
             DispatchQueue.main.async {
-                manager.onHotkeyPressed?()
+                if eventKind == UInt32(kEventHotKeyPressed) {
+                    manager.onHotkeyPressed?()
+                } else if eventKind == UInt32(kEventHotKeyReleased) {
+                    manager.onHotkeyReleased?()
+                }
             }
             return noErr
         }
@@ -53,8 +69,8 @@ final class HotkeyManager {
         InstallEventHandler(
             GetApplicationEventTarget(),
             handler,
-            1,
-            &eventType,
+            2,
+            &eventTypes,
             Unmanaged.passUnretained(self).toOpaque(),
             nil
         )

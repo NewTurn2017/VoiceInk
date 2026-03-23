@@ -4,6 +4,7 @@ import Qwen3ASR
 final class LocalSTTEngine: STTEngine {
     var onTranscript: ((String) -> Void)?
     var onStatusChange: ((STTStatus) -> Void)?
+    var onAudioLevel: ((Float) -> Void)?
     var onModelProgress: ((Double, String) -> Void)?
     private(set) var currentStatus: STTStatus = .idle
 
@@ -87,6 +88,10 @@ final class LocalSTTEngine: STTEngine {
 
         // Simple energy-based silence detection
         let energy = samples.reduce(0) { $0 + abs($1) } / Float(samples.count)
+
+        DispatchQueue.main.async { [weak self] in
+            self?.onAudioLevel?(energy)
+        }
 
         if energy < silenceThreshold {
             silenceCounter += 1

@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceManagement
+import Qwen3ASR
 
 struct SettingsView: View {
     var body: some View {
@@ -27,6 +28,7 @@ struct SettingsView: View {
 
 struct GeneralSettingsTab: View {
     @AppStorage("launchAtLogin") private var launchAtLogin = false
+    @AppStorage("holdToTalk") private var holdToTalk = false
 
     var body: some View {
         Form {
@@ -41,7 +43,7 @@ struct GeneralSettingsTab: View {
 
             Section {
                 HStack {
-                    Text("Toggle Recording")
+                    Text(holdToTalk ? "Hold to Record" : "Toggle Recording")
                     Spacer()
                     Text("⌥ Space")
                         .foregroundStyle(.secondary)
@@ -50,6 +52,14 @@ struct GeneralSettingsTab: View {
                         .background(.quaternary)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
+
+                Toggle("Hold-to-Talk Mode", isOn: $holdToTalk)
+
+                Text(holdToTalk
+                    ? "Hold ⌥ Space to record, release to stop and transcribe."
+                    : "Press ⌥ Space to start/stop recording.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             } header: {
                 Text("Hotkey")
             }
@@ -87,6 +97,10 @@ struct GeneralSettingsTab: View {
 struct EngineSettingsTab: View {
     @AppStorage("sttEngineType") private var engineTypeRaw = STTEngineType.local.rawValue
     @AppStorage("sttModelSize") private var modelSizeRaw = STTModelSize.small.rawValue
+    @State private var downloadProgress: Double?
+    @State private var downloadStatus: String?
+    @State private var isDownloading = false
+    @State private var modelCacheCheck = UUID() // triggers view refresh
 
     private var engineType: STTEngineType {
         STTEngineType(rawValue: engineTypeRaw) ?? .local
@@ -94,6 +108,14 @@ struct EngineSettingsTab: View {
 
     private var modelSize: STTModelSize {
         STTModelSize(rawValue: modelSizeRaw) ?? .small
+    }
+
+    private func isModelCached(_ size: STTModelSize) -> Bool {
+        let cacheBase = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Caches/qwen3-speech/models")
+        let orgName = size.rawValue.components(separatedBy: "/").first ?? ""
+        let orgPath = cacheBase.appendingPathComponent(orgName)
+        return FileManager.default.fileExists(atPath: orgPath.path)
     }
 
     var body: some View {
@@ -127,9 +149,38 @@ struct EngineSettingsTab: View {
                         }
                     }
 
-                    Text("The model will be downloaded automatically on first use.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack {
+                        Text("Status")
+                        Spacer()
+                        let _ = modelCacheCheck // observe refresh trigger
+                        if isModelCached(modelSize) {
+                            Label("Ready", systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                                .font(.caption)
+                        } else if isDownloading {
+                            Label(downloadStatus ?? "Downloading...", systemImage: "arrow.down.circle")
+                                .foregroundStyle(.blue)
+                                .font(.caption)
+                        } else {
+                            Label("Not downloaded", systemImage: "arrow.down.circle")
+                                .foregroundStyle(.orange)
+                                .font(.caption)
+                        }
+                    }
+
+                    if isDownloading, let progress = downloadProgress {
+                        ProgressView(value: progress)
+                        Text("\(Int(progress * 100))%")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+
+                    if !isModelCached(modelSize) && !isDownloading {
+                        Button("Download Model Now") {
+                            downloadModel()
+                        }
+                    }
                 } header: {
                     Text("Local Model")
                 }
@@ -137,6 +188,37 @@ struct EngineSettingsTab: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    private func downloadModel() {
+        isDownloading = true
+        downloadProgress = 0
+        downloadStatus = "Preparing..."
+
+        Task {
+            do {
+                let _ = try await Qwen3ASRModel.fromPretrained(
+                    modelId: modelSize.rawValue
+                ) { progress, status in
+                    DispatchQueue.main.async {
+                        self.downloadProgress = progress
+                        self.downloadStatus = status
+                    }
+                }
+                await MainActor.run {
+                    isDownloading = false
+                    downloadProgress = nil
+                    downloadStatus = nil
+                    modelCacheCheck = UUID()
+                }
+            } catch {
+                await MainActor.run {
+                    isDownloading = false
+                    downloadProgress = nil
+                    downloadStatus = "Error: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }
 

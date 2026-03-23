@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MenuBarView: View {
     @ObservedObject var appState: AppState
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack {
@@ -26,6 +27,35 @@ struct MenuBarView: View {
 
             Divider()
 
+            // Recent transcriptions
+            if !appState.historyManager.entries.isEmpty {
+                Text("Recent Transcriptions")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(appState.historyManager.entries.prefix(5)) { entry in
+                    Button {
+                        appState.historyManager.copyToClipboard(entry)
+                    } label: {
+                        HStack {
+                            Text(entry.preview)
+                                .lineLimit(1)
+                            Spacer()
+                            Text(entry.timeAgo)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Button("Clear History") {
+                    appState.historyManager.clear()
+                }
+                .foregroundStyle(.secondary)
+
+                Divider()
+            }
+
             // Engine info
             Text("Engine: \(appState.engineType.displayName)")
                 .font(.caption)
@@ -39,9 +69,10 @@ struct MenuBarView: View {
 
             Divider()
 
-            // Settings
-            SettingsLink {
-                Text("Settings...")
+            // Settings — activate app to bring window to front
+            Button("Settings...") {
+                NSApp.activate(ignoringOtherApps: true)
+                openSettings()
             }
             .keyboardShortcut(",")
 

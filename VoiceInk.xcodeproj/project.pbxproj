@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0A4649E7AF5BC7DBB4128391 /* TextInputService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54ABBD1B3BE3567832A9B909 /* TextInputService.swift */; };
 		13E87B86EB2125C8607849A6 /* VoiceInkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 857DA45D1CEE06AC9D2E988C /* VoiceInkApp.swift */; };
+		22D04781903718BFFA1B1431 /* RecordingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = D66DAFACA7D69C6476825D8F /* RecordingOverlay.swift */; };
 		409FBE01775B7BECC413CEC8 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C3205062FCDD540935B6B50 /* AppState.swift */; };
 		40D83EA96166814268BE2772 /* STTEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5390BC03D37A1046020E03C3 /* STTEngine.swift */; };
 		4F934F1E18D4BC6F127642EE /* AccessibilityHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB73A76D8FCE7529776FD767 /* AccessibilityHelper.swift */; };
@@ -23,6 +24,7 @@
 		F10F167269DF87038677B2C5 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50761F3537321A21EC0FF99F /* MenuBarView.swift */; };
 		F4614CC34BAAD53D6C7436BA /* CloudSTTEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DF357CAC828F9D2C5DF8DCF /* CloudSTTEngine.swift */; };
 		F6B27FC1D36FCBFE24E503FB /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C11CB83B475DAAED9303701 /* AudioSessionManager.swift */; };
+		B1A2C3D4E5F60718A9B0C1D2 /* TranscriptHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718A9B0C1D2 /* TranscriptHistoryManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,8 +43,10 @@
 		C2502B4CE99CBF2A108F411A /* VoiceInk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceInk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C6FF096D1503777AD74A5DA5 /* STTStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STTStatus.swift; sourceTree = "<group>"; };
 		D32703C0106237D1010CEBC9 /* SoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundPlayer.swift; sourceTree = "<group>"; };
+		D66DAFACA7D69C6476825D8F /* RecordingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingOverlay.swift; sourceTree = "<group>"; };
 		D67BF8B5A75901CD885AD43C /* VoiceInk.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VoiceInk.entitlements; sourceTree = "<group>"; };
 		E93FA18FBE89504124486B97 /* ModelConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelConfiguration.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718A9B0C1D2 /* TranscriptHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptHistoryManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,9 +134,18 @@
 			isa = PBXGroup;
 			children = (
 				50761F3537321A21EC0FF99F /* MenuBarView.swift */,
+				D66DAFACA7D69C6476825D8F /* RecordingOverlay.swift */,
 				9EDDC11D6CEECF40DD757E51 /* SettingsView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		C1D2E3F4A5B60718C9D0E1F2 /* History */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60718A9B0C1D2 /* TranscriptHistoryManager.swift */,
+			);
+			path = History;
 			sourceTree = "<group>";
 		};
 		CB35CBB3A22605BA368CD7F8 /* Hotkey */ = {
@@ -149,6 +162,7 @@
 				6C3205062FCDD540935B6B50 /* AppState.swift */,
 				857DA45D1CEE06AC9D2E988C /* VoiceInkApp.swift */,
 				64A99B3A79A4EE2D6B1D4BCE /* Audio */,
+				C1D2E3F4A5B60718C9D0E1F2 /* History */,
 				CB35CBB3A22605BA368CD7F8 /* Hotkey */,
 				131528F32C7A0DDC6BA83C30 /* Resources */,
 				7455C2AEF49DC64A1983D347 /* Security */,
@@ -233,11 +247,13 @@
 				75B9CBAD98DFD102618BDB31 /* LocalSTTEngine.swift in Sources */,
 				F10F167269DF87038677B2C5 /* MenuBarView.swift in Sources */,
 				AEFA3A5D4F959BB3755337DD /* ModelConfiguration.swift in Sources */,
+				22D04781903718BFFA1B1431 /* RecordingOverlay.swift in Sources */,
 				40D83EA96166814268BE2772 /* STTEngine.swift in Sources */,
 				AD64B091674E5AE58359460D /* STTStatus.swift in Sources */,
 				E4A419763931599AA1392AA7 /* SettingsView.swift in Sources */,
 				4FFA337AB13714A2C4DC3B7F /* SoundPlayer.swift in Sources */,
 				0A4649E7AF5BC7DBB4128391 /* TextInputService.swift in Sources */,
+				B1A2C3D4E5F60718A9B0C1D2 /* TranscriptHistoryManager.swift in Sources */,
 				13E87B86EB2125C8607849A6 /* VoiceInkApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
