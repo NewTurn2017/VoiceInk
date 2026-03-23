@@ -126,9 +126,9 @@ final class CloudSTTEngine: NSObject, STTEngine, URLSessionWebSocketDelegate {
     // MARK: - Audio Capture
 
     private func startAudioCapture() {
-        audioManager.startCapture { [weak self] audioData in
+        audioManager.startCapture(onAudioData: { [weak self] audioData in
             self?.sendAudioData(audioData)
-        }
+        })
     }
 
     private func sendAudioData(_ data: Data) {
