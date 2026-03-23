@@ -11,5 +11,10 @@ struct VoiceInkApp: App {
             Image(systemName: appState.menuBarIcon)
         }
         .menuBarExtraStyle(.menu)
+
+        Settings {
+            SettingsView()
+                .environmentObject(appState)
+        }
     }
 }

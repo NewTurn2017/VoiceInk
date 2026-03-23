@@ -3,13 +3,25 @@ import SwiftUI
 @MainActor
 final class AppState: ObservableObject {
     @Published var currentStatus: STTStatus = .idle
-    @Published var engineType: STTEngineType {
-        didSet { UserDefaults.standard.set(engineType.rawValue, forKey: "sttEngineType") }
-    }
-    @Published var modelSize: STTModelSize {
-        didSet { UserDefaults.standard.set(modelSize.rawValue, forKey: "sttModelSize") }
-    }
     @Published var modelDownloadProgress: Double?
+
+    @Published var engineType: STTEngineType {
+        didSet {
+            guard oldValue != engineType else { return }
+            UserDefaults.standard.set(engineType.rawValue, forKey: "sttEngineType")
+            rebuildEngine()
+        }
+    }
+
+    @Published var modelSize: STTModelSize {
+        didSet {
+            guard oldValue != modelSize else { return }
+            UserDefaults.standard.set(modelSize.rawValue, forKey: "sttModelSize")
+            if engineType == .local {
+                rebuildEngine()
+            }
+        }
+    }
 
     private var engine: STTEngine?
     private let hotkeyManager = HotkeyManager()
@@ -18,6 +30,7 @@ final class AppState: ObservableObject {
     private let keychainManager = KeychainManager.shared
     private let audioManager = AudioSessionManager()
     private var lastToggleTime: Date = .distantPast
+    private var settingsObserver: NSObjectProtocol?
 
     var menuBarIcon: String {
         switch currentStatus {
@@ -33,7 +46,6 @@ final class AppState: ObservableObject {
     }
 
     init() {
-        // Restore saved preferences
         let savedEngine = UserDefaults.standard.string(forKey: "sttEngineType") ?? STTEngineType.local.rawValue
         self.engineType = STTEngineType(rawValue: savedEngine) ?? .local
 
@@ -43,6 +55,7 @@ final class AppState: ObservableObject {
         keychainManager.migrateFromEnvironmentIfNeeded()
         setupEngine()
         setupHotkey()
+        observeSettingsChanges()
         AccessibilityHelper.requestPermissionIfNeeded()
     }
 
@@ -60,44 +73,23 @@ final class AppState: ObservableObject {
         }
     }
 
-    func switchEngine(to type: STTEngineType) {
-        guard type != engineType || engine == nil else { return }
+    // MARK: - Private
 
-        // Stop current engine if recording
+    private func rebuildEngine() {
         if isRecording {
             engine?.stop()
         }
-
-        engineType = type
         setupEngine()
     }
 
-    func switchModel(to size: STTModelSize) {
-        guard size != modelSize else { return }
-
-        if isRecording {
-            engine?.stop()
-        }
-
-        modelSize = size
-
-        // Rebuild local engine with new model
-        if engineType == .local {
-            setupEngine()
-        }
-    }
-
-    // MARK: - Private
-
     private func setupEngine() {
-        // Detach old engine callbacks
         engine?.onTranscript = nil
         engine?.onStatusChange = nil
 
         switch engineType {
         case .local:
             let local = LocalSTTEngine(audioManager: audioManager, modelId: modelSize.rawValue)
-            local.onModelProgress = { [weak self] progress, status in
+            local.onModelProgress = { [weak self] progress, _ in
                 Task { @MainActor in
                     self?.modelDownloadProgress = progress < 1.0 ? progress : nil
                 }
@@ -125,6 +117,26 @@ final class AppState: ObservableObject {
     private func setupHotkey() {
         hotkeyManager.onHotkeyPressed = { [weak self] in
             self?.toggleRecording()
+        }
+    }
+
+    /// Observe UserDefaults changes from Settings window (@AppStorage writes)
+    private func observeSettingsChanges() {
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            let newEngineRaw = UserDefaults.standard.string(forKey: "sttEngineType") ?? STTEngineType.local.rawValue
+            let newModelRaw = UserDefaults.standard.string(forKey: "sttModelSize") ?? STTModelSize.small.rawValue
+
+            if let newEngine = STTEngineType(rawValue: newEngineRaw), newEngine != self.engineType {
+                self.engineType = newEngine
+            }
+            if let newModel = STTModelSize(rawValue: newModelRaw), newModel != self.modelSize {
+                self.modelSize = newModel
+            }
         }
     }
 }

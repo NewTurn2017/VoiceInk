@@ -19,6 +19,7 @@
 		AEFA3A5D4F959BB3755337DD /* ModelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93FA18FBE89504124486B97 /* ModelConfiguration.swift */; };
 		C78270567EB7F264586A2881 /* Qwen3ASR in Frameworks */ = {isa = PBXBuildFile; productRef = 017079AE05DF3646C3675012 /* Qwen3ASR */; };
 		CD1E234698D6B47D5D8DD115 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 454F144A758D9A5401D0A224 /* KeychainManager.swift */; };
+		E4A419763931599AA1392AA7 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EDDC11D6CEECF40DD757E51 /* SettingsView.swift */; };
 		F10F167269DF87038677B2C5 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50761F3537321A21EC0FF99F /* MenuBarView.swift */; };
 		F4614CC34BAAD53D6C7436BA /* CloudSTTEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DF357CAC828F9D2C5DF8DCF /* CloudSTTEngine.swift */; };
 		F6B27FC1D36FCBFE24E503FB /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C11CB83B475DAAED9303701 /* AudioSessionManager.swift */; };
@@ -35,6 +36,7 @@
 		7C11CB83B475DAAED9303701 /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManager.swift; sourceTree = "<group>"; };
 		857DA45D1CEE06AC9D2E988C /* VoiceInkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInkApp.swift; sourceTree = "<group>"; };
 		94B49896D59DADED2A207AE1 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
+		9EDDC11D6CEECF40DD757E51 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AB73A76D8FCE7529776FD767 /* AccessibilityHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityHelper.swift; sourceTree = "<group>"; };
 		C2502B4CE99CBF2A108F411A /* VoiceInk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceInk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C6FF096D1503777AD74A5DA5 /* STTStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STTStatus.swift; sourceTree = "<group>"; };
@@ -128,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				50761F3537321A21EC0FF99F /* MenuBarView.swift */,
+				9EDDC11D6CEECF40DD757E51 /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -232,6 +235,7 @@
 				AEFA3A5D4F959BB3755337DD /* ModelConfiguration.swift in Sources */,
 				40D83EA96166814268BE2772 /* STTEngine.swift in Sources */,
 				AD64B091674E5AE58359460D /* STTStatus.swift in Sources */,
+				E4A419763931599AA1392AA7 /* SettingsView.swift in Sources */,
 				4FFA337AB13714A2C4DC3B7F /* SoundPlayer.swift in Sources */,
 				0A4649E7AF5BC7DBB4128391 /* TextInputService.swift in Sources */,
 				13E87B86EB2125C8607849A6 /* VoiceInkApp.swift in Sources */,

@@ -5,7 +5,8 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack {
-            Text(statusText)
+            // Status
+            Label(statusText, systemImage: statusIcon)
 
             if let progress = appState.modelDownloadProgress {
                 ProgressView(value: progress)
@@ -17,6 +18,7 @@ struct MenuBarView: View {
 
             Divider()
 
+            // Record toggle
             Button(appState.isRecording ? "Stop Recording" : "Start Recording") {
                 appState.toggleRecording()
             }
@@ -24,49 +26,28 @@ struct MenuBarView: View {
 
             Divider()
 
-            // Engine selection
-            Menu("Engine: \(appState.engineType.displayName)") {
-                ForEach(STTEngineType.allCases, id: \.self) { type in
-                    Button {
-                        appState.switchEngine(to: type)
-                    } label: {
-                        HStack {
-                            Text(type.displayName)
-                            if type == appState.engineType {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Model selection (only for local engine)
-            if appState.engineType == .local {
-                Menu("Model: \(appState.modelSize.displayName)") {
-                    ForEach(STTModelSize.allCases, id: \.self) { size in
-                        Button {
-                            appState.switchModel(to: size)
-                        } label: {
-                            HStack {
-                                Text(size.displayName)
-                                if size == appState.modelSize {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Divider()
-
-            Text("⌥ Space to toggle")
+            // Engine info
+            Text("Engine: \(appState.engineType.displayName)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
+            if appState.engineType == .local {
+                Text("Model: \(appState.modelSize.displayName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Divider()
 
-            Button("Quit") {
+            // Settings
+            SettingsLink {
+                Text("Settings...")
+            }
+            .keyboardShortcut(",")
+
+            Divider()
+
+            Button("Quit VoiceInk") {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q")
@@ -75,14 +56,19 @@ struct MenuBarView: View {
 
     private var statusText: String {
         switch appState.currentStatus {
-        case .idle:
-            return "VoiceInk — Idle"
-        case .connecting:
-            return "VoiceInk — Loading..."
-        case .recording:
-            return "VoiceInk — Recording"
-        case .error(let message):
-            return "VoiceInk — Error: \(message ?? "Unknown")"
+        case .idle: return "Idle"
+        case .connecting: return "Loading..."
+        case .recording: return "Recording"
+        case .error(let msg): return "Error: \(msg ?? "Unknown")"
+        }
+    }
+
+    private var statusIcon: String {
+        switch appState.currentStatus {
+        case .idle: return "mic.slash"
+        case .connecting: return "ellipsis.circle"
+        case .recording: return "mic.fill"
+        case .error: return "exclamationmark.triangle"
         }
     }
 }
