@@ -189,13 +189,11 @@ jobs:
           echo "✅ Draft release created: ${{ steps.version.outputs.tag }}"
 
       # ─── Update Homebrew tap ───
-      # Note: HOMEBREW_TAP_TOKEN은 homebrew-tap 저장소 push 권한이 있는 PAT
-      # 생성: GitHub Settings → Developer settings → Fine-grained tokens
-      #   - Repository access: homebrew-tap only
-      #   - Permissions: Contents (Read and write)
+      # Uses GitHub Contents API directly — no git clone/push needed
+      # HOMEBREW_TAP_TOKEN: Fine-grained PAT with Contents (Read/Write) on homebrew-tap
       - name: Update Homebrew tap
         env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           DMG_PATH="$RUNNER_TEMP/$APP_NAME-$VERSION.dmg"
@@ -203,12 +201,12 @@ jobs:
           DMG_URL="https://github.com/NewTurn2017/VoiceInk/releases/download/${{ steps.version.outputs.tag }}/$APP_NAME-$VERSION.dmg"
 
           # Generate cask formula
-          FORMULA=$(cat <<RUBY
+          FORMULA=$(cat <<'RUBY'
           cask "voiceink" do
-            version "$VERSION"
-            sha256 "$SHA256"
+            version "__VERSION__"
+            sha256 "__SHA256__"
 
-            url "$DMG_URL"
+            url "__DMG_URL__"
             name "VoiceInk"
             desc "Voice-to-text input tool for macOS"
             homepage "https://github.com/NewTurn2017/VoiceInk"
@@ -225,22 +223,53 @@ jobs:
           RUBY
           )
 
-          # Clone public tap repo, then push with auth header
-          git clone https://github.com/NewTurn2017/homebrew-tap.git "$RUNNER_TEMP/homebrew-tap"
-          mkdir -p "$RUNNER_TEMP/homebrew-tap/Casks"
-          echo "$FORMULA" > "$RUNNER_TEMP/homebrew-tap/Casks/voiceink.rb"
+          FORMULA="${FORMULA//__VERSION__/$VERSION}"
+          FORMULA="${FORMULA//__SHA256__/$SHA256}"
+          FORMULA="${FORMULA//__DMG_URL__/$DMG_URL}"
 
-          cd "$RUNNER_TEMP/homebrew-tap"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Casks/voiceink.rb
-          git diff --cached --quiet || git commit -m "Update voiceink to $VERSION"
+          # Base64 encode formula content for API
+          CONTENT_B64=$(echo "$FORMULA" | base64)
 
-          # Push using extraheader (same method as actions/checkout)
-          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64)"
-          git -c "http.https://github.com/.extraheader=$AUTH_HEADER" push origin main
+          # Check if file already exists (get SHA for update)
+          EXISTING_SHA=$(curl -sf \
+            -H "Authorization: token $TAP_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/NewTurn2017/homebrew-tap/contents/Casks/voiceink.rb" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || echo "")
 
-          echo "✅ Homebrew tap updated to $VERSION"
+          # Build JSON payload
+          if [ -n "$EXISTING_SHA" ]; then
+            PAYLOAD=$(python3 -c "
+          import json
+          print(json.dumps({
+              'message': 'Update voiceink to $VERSION',
+              'content': '''$CONTENT_B64''',
+              'sha': '$EXISTING_SHA'
+          }))")
+          else
+            PAYLOAD=$(python3 -c "
+          import json
+          print(json.dumps({
+              'message': 'Update voiceink to $VERSION',
+              'content': '''$CONTENT_B64'''
+          }))")
+          fi
+
+          # Create or update file via Contents API
+          HTTP_CODE=$(curl -s -o /tmp/tap_response.json -w "%{http_code}" \
+            -X PUT \
+            -H "Authorization: token $TAP_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/NewTurn2017/homebrew-tap/contents/Casks/voiceink.rb" \
+            -d "$PAYLOAD")
+
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+            echo "✅ Homebrew tap updated to $VERSION"
+          else
+            echo "❌ Failed to update tap (HTTP $HTTP_CODE)"
+            cat /tmp/tap_response.json
+            exit 1
+          fi
 
       # ─── Cleanup keychain ───
       - name: Cleanup
