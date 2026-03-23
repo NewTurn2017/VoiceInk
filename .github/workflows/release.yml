@@ -122,22 +122,37 @@ jobs:
         run: |
           brew install create-dmg
 
+          DMG_ARGS=(
+            --volname "$APP_NAME"
+            --window-pos 200 120
+            --window-size 660 400
+            --icon-size 100
+            --icon "$APP_NAME.app" 180 170
+            --hide-extension "$APP_NAME.app"
+            --app-drop-link 480 170
+            --no-internet-enable
+          )
+
+          # volicon은 아이콘 파일이 존재할 때만 추가
+          ICON_PATH="$RUNNER_TEMP/$APP_NAME.app/Contents/Resources/AppIcon.icns"
+          if [ -f "$ICON_PATH" ]; then
+            DMG_ARGS+=(--volicon "$ICON_PATH")
+          fi
+
+          # create-dmg exits non-zero even on success; check DMG existence instead
           create-dmg \
-            --volname "$APP_NAME" \
-            --volicon "$RUNNER_TEMP/$APP_NAME.app/Contents/Resources/AppIcon.icns" \
-            --window-pos 200 120 \
-            --window-size 660 400 \
-            --icon-size 100 \
-            --icon "$APP_NAME.app" 180 170 \
-            --hide-extension "$APP_NAME.app" \
-            --app-drop-link 480 170 \
-            --no-internet-enable \
+            "${DMG_ARGS[@]}" \
             "$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg" \
             "$RUNNER_TEMP/$APP_NAME.app" \
-          || true  # create-dmg returns non-zero when it creates the DMG (known issue)
+          || true
 
-          # Verify DMG was created
-          ls -lh "$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg"
+          # Verify DMG was actually created
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg"
+          if [ ! -f "$DMG_PATH" ]; then
+            echo "❌ DMG was not created"
+            exit 1
+          fi
+          ls -lh "$DMG_PATH"
 
       # ─── Notarize DMG ───
       - name: Notarize DMG
