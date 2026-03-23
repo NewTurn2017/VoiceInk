@@ -4,8 +4,6 @@
 Package.resolved
 
 # Xcode
-*.xcodeproj/
-*.xcworkspace/
 xcuserdata/
 DerivedData/
 
@@ -24,6 +22,9 @@ VoiceType.app/
 
 # bkit state
 .bkit/
+
+# omc state
+.omc/
 
 # Sensitive files
 plan.md
