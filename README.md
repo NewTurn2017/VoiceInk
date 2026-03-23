@@ -14,7 +14,7 @@
 
 <div align="center">
 
-https://github.com/NewTurn2017/VoiceInk/raw/main/assets/voiceink.mp4
+https://github.com/user-attachments/assets/780aded8-e0f1-4e45-a57f-1edd60ad147a
 
 </div>
 
