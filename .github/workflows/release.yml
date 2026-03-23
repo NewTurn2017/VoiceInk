@@ -1,0 +1,234 @@
+name: Build, Notarize & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  APP_NAME: VoiceInk
+  SCHEME: VoiceInk
+  XCODEPROJ: VoiceInk.xcodeproj
+
+jobs:
+  build-and-release:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      # ─── Checkout ───
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ─── Extract version from tag ───
+      - name: Extract version
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+
+      # ─── Install signing certificate ───
+      - name: Install certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          CERT_PATH="$RUNNER_TEMP/certificate.p12"
+          echo "$CERTIFICATE_P12" | base64 --decode > "$CERT_PATH"
+          security import "$CERT_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+          # Clean up certificate file
+          rm -f "$CERT_PATH"
+
+      # ─── Resolve packages ───
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$XCODEPROJ" \
+            -scheme "$SCHEME" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm"
+
+      # ─── Build & Archive ───
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project "$XCODEPROJ" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/$APP_NAME.xcarchive" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
+            OTHER_CODE_SIGN_FLAGS="--timestamp" \
+            ENABLE_HARDENED_RUNTIME=YES
+
+      # ─── Export app from archive ───
+      - name: Export app
+        run: |
+          APP_PATH="$RUNNER_TEMP/$APP_NAME.xcarchive/Products/Applications/$APP_NAME.app"
+          cp -R "$APP_PATH" "$RUNNER_TEMP/$APP_NAME.app"
+
+          # Verify code signature
+          codesign --verify --deep --strict "$RUNNER_TEMP/$APP_NAME.app"
+          echo "✅ Code signature verified"
+
+      # ─── Notarize ───
+      - name: Notarize app
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Create zip for notarization
+          ditto -c -k --keepParent "$RUNNER_TEMP/$APP_NAME.app" "$RUNNER_TEMP/$APP_NAME.zip"
+
+          # Submit for notarization and wait
+          xcrun notarytool submit "$RUNNER_TEMP/$APP_NAME.zip" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait \
+            --timeout 30m
+
+          # Staple the notarization ticket
+          xcrun stapler staple "$RUNNER_TEMP/$APP_NAME.app"
+          echo "✅ Notarization complete and stapled"
+
+      # ─── Create DMG ───
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+
+          create-dmg \
+            --volname "$APP_NAME" \
+            --volicon "$RUNNER_TEMP/$APP_NAME.app/Contents/Resources/AppIcon.icns" \
+            --window-pos 200 120 \
+            --window-size 660 400 \
+            --icon-size 100 \
+            --icon "$APP_NAME.app" 180 170 \
+            --hide-extension "$APP_NAME.app" \
+            --app-drop-link 480 170 \
+            --no-internet-enable \
+            "$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg" \
+            "$RUNNER_TEMP/$APP_NAME.app" \
+          || true  # create-dmg returns non-zero when it creates the DMG (known issue)
+
+          # Verify DMG was created
+          ls -lh "$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg"
+
+      # ─── Notarize DMG ───
+      - name: Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg"
+
+          xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait \
+            --timeout 30m
+
+          xcrun stapler staple "$DMG_PATH"
+          echo "✅ DMG notarized and stapled"
+
+      # ─── Create GitHub Release ───
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg"
+
+          gh release create "${{ steps.version.outputs.tag }}" \
+            "$DMG_PATH" \
+            --title "$APP_NAME ${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            --draft
+
+          echo "✅ Draft release created: ${{ steps.version.outputs.tag }}"
+
+      # ─── Update Homebrew tap ───
+      # Note: HOMEBREW_TAP_TOKEN은 homebrew-tap 저장소 push 권한이 있는 PAT
+      # 생성: GitHub Settings → Developer settings → Fine-grained tokens
+      #   - Repository access: homebrew-tap only
+      #   - Permissions: Contents (Read and write)
+      - name: Update Homebrew tap
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME-$VERSION.dmg"
+          SHA256=$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')
+          DMG_URL="https://github.com/NewTurn2017/VoiceInk/releases/download/${{ steps.version.outputs.tag }}/$APP_NAME-$VERSION.dmg"
+
+          # Generate cask formula
+          FORMULA=$(cat <<RUBY
+          cask "voiceink" do
+            version "$VERSION"
+            sha256 "$SHA256"
+
+            url "$DMG_URL"
+            name "VoiceInk"
+            desc "Voice-to-text input tool for macOS"
+            homepage "https://github.com/NewTurn2017/VoiceInk"
+
+            depends_on macos: ">= :sonoma"
+
+            app "VoiceInk.app"
+
+            zap trash: [
+              "~/Library/Preferences/com.voiceink.app.plist",
+              "~/Library/Application Support/VoiceInk",
+            ]
+          end
+          RUBY
+          )
+
+          # Clone tap repo and update formula
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/NewTurn2017/homebrew-tap.git" "$RUNNER_TEMP/homebrew-tap"
+          mkdir -p "$RUNNER_TEMP/homebrew-tap/Casks"
+          echo "$FORMULA" > "$RUNNER_TEMP/homebrew-tap/Casks/voiceink.rb"
+
+          cd "$RUNNER_TEMP/homebrew-tap"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/voiceink.rb
+          git diff --cached --quiet || git commit -m "Update voiceink to $VERSION"
+          git push origin main
+
+          echo "✅ Homebrew tap updated to $VERSION"
+
+      # ─── Cleanup keychain ───
+      - name: Cleanup
+        if: always()
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi
