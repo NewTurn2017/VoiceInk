@@ -4,7 +4,7 @@
 
 **Mac에서 말하면 텍스트로 — 빠르고 정확한 음성 입력 도구**
 
-[![Download](https://img.shields.io/badge/Download-DMG-blue?logo=apple&logoColor=white&style=for-the-badge)](https://github.com/NewTurn2017/VoiceInk/releases/latest)
+[![Download](https://img.shields.io/badge/Download-DMG-blue?logo=apple&logoColor=white&style=for-the-badge)](https://github.com/NewTurn2017/VoiceInk/releases/latest/download/VoiceInk.dmg)
 
 [![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B-blue?logo=apple&logoColor=white)](#requirements)
 [![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange?logo=swift&logoColor=white)](#)

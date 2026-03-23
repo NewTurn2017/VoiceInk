@@ -142,12 +142,12 @@ jobs:
           # create-dmg exits non-zero even on success; check DMG existence instead
           create-dmg \
             "${DMG_ARGS[@]}" \
-            "$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg" \
+            "$RUNNER_TEMP/$APP_NAME.dmg" \
             "$RUNNER_TEMP/$APP_NAME.app" \
           || true
 
           # Verify DMG was actually created
-          DMG_PATH="$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg"
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME.dmg"
           if [ ! -f "$DMG_PATH" ]; then
             echo "❌ DMG was not created"
             exit 1
@@ -161,7 +161,7 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          DMG_PATH="$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg"
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME.dmg"
 
           xcrun notarytool submit "$DMG_PATH" \
             --apple-id "$APPLE_ID" \
@@ -178,7 +178,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          DMG_PATH="$RUNNER_TEMP/$APP_NAME-${{ steps.version.outputs.version }}.dmg"
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME.dmg"
 
           gh release create "${{ steps.version.outputs.tag }}" \
             "$DMG_PATH" \
