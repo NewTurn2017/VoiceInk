@@ -225,10 +225,7 @@ jobs:
           RUBY
           )
 
-          # Configure git credential helper for tap repo access
-          git config --global credential.helper store
-          echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
-
+          # Clone public tap repo, then push with auth header
           git clone https://github.com/NewTurn2017/homebrew-tap.git "$RUNNER_TEMP/homebrew-tap"
           mkdir -p "$RUNNER_TEMP/homebrew-tap/Casks"
           echo "$FORMULA" > "$RUNNER_TEMP/homebrew-tap/Casks/voiceink.rb"
@@ -238,10 +235,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Casks/voiceink.rb
           git diff --cached --quiet || git commit -m "Update voiceink to $VERSION"
-          git push origin main
 
-          # Cleanup credentials
-          rm -f ~/.git-credentials
+          # Push using extraheader (same method as actions/checkout)
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64)"
+          git -c "http.https://github.com/.extraheader=$AUTH_HEADER" push origin main
 
           echo "✅ Homebrew tap updated to $VERSION"
 
