@@ -1,0 +1,31 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# Build output
+VoiceType.app/
+*.app/
+
+# bkit state
+.bkit/
+
+# Sensitive files
+plan.md
+.env
+.env.*
