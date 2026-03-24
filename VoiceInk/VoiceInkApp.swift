@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct VoiceInkApp: App {
     @StateObject private var appState = AppState()
+    @StateObject private var updaterManager = UpdaterManager()
 
     var body: some Scene {
         MenuBarExtra {
@@ -15,6 +16,7 @@ struct VoiceInkApp: App {
         Settings {
             SettingsView()
                 .environmentObject(appState)
+                .environmentObject(updaterManager)
         }
     }
 }

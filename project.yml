@@ -18,6 +18,9 @@ packages:
   Qwen3Speech:
     url: https://github.com/soniqo/speech-swift
     branch: main
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: "2.9.0"
 
 targets:
   VoiceInk:
@@ -34,8 +37,10 @@ targets:
         CODE_SIGN_ENTITLEMENTS: VoiceInk/Resources/VoiceInk.entitlements
         PRODUCT_NAME: VoiceInk
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.1.1"
+        MARKETING_VERSION: "1.2.0"
         CURRENT_PROJECT_VERSION: 1
     dependencies:
       - package: Qwen3Speech
         product: Qwen3ASR
+      - package: Sparkle
+        product: Sparkle

@@ -173,6 +173,25 @@ jobs:
           xcrun stapler staple "$DMG_PATH"
           echo "✅ DMG notarized and stapled"
 
+      # ─── Sign DMG with EdDSA for Sparkle ───
+      - name: Sign DMG for Sparkle
+        id: sign
+        env:
+          SPARKLE_EDDSA_KEY: ${{ secrets.SPARKLE_EDDSA_KEY }}
+        run: |
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME.dmg"
+
+          # Download Sparkle binary tools
+          curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/2.9.0/Sparkle-2.9.0.tar.xz" \
+            | tar xJ -C "$RUNNER_TEMP/sparkle-tools"
+          SIGN_TOOL="$RUNNER_TEMP/sparkle-tools/bin/sign_update"
+          chmod +x "$SIGN_TOOL"
+
+          # Generate EdDSA signature
+          SIGNATURE=$(echo "$SPARKLE_EDDSA_KEY" | "$SIGN_TOOL" "$DMG_PATH" --ed-key-file -)
+          echo "signature=$SIGNATURE" >> "$GITHUB_OUTPUT"
+          echo "✅ DMG signed for Sparkle"
+
       # ─── Create GitHub Release ───
       - name: Create Release
         env:
@@ -187,6 +206,51 @@ jobs:
             --draft
 
           echo "✅ Draft release created: ${{ steps.version.outputs.tag }}"
+
+      # ─── Generate and deploy appcast ───
+      - name: Deploy appcast
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DMG_PATH="$RUNNER_TEMP/$APP_NAME.dmg"
+          DMG_SIZE=$(stat -f%z "$DMG_PATH" 2>/dev/null || stat -c%s "$DMG_PATH")
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          SIGNATURE="${{ steps.sign.outputs.signature }}"
+          PUB_DATE=$(date -R 2>/dev/null || date -u +"%a, %d %b %Y %H:%M:%S %z")
+
+          cat > "$RUNNER_TEMP/appcast.xml" << APPCAST_EOF
+          <?xml version="1.0" standalone="yes"?>
+          <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+            <channel>
+              <title>VoiceInk Updates</title>
+              <item>
+                <title>VoiceInk $VERSION</title>
+                <sparkle:version>$VERSION</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <pubDate>$PUB_DATE</pubDate>
+                <enclosure
+                  url="https://github.com/NewTurn2017/VoiceInk/releases/download/$TAG/VoiceInk.dmg"
+                  $SIGNATURE
+                  length="$DMG_SIZE"
+                  type="application/octet-stream" />
+              </item>
+            </channel>
+          </rss>
+          APPCAST_EOF
+
+          # Deploy to gh-pages branch
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan gh-pages-deploy
+          git rm -rf . 2>/dev/null || true
+          cp "$RUNNER_TEMP/appcast.xml" appcast.xml
+          git add appcast.xml
+          git commit -m "Update appcast for $TAG"
+          git push origin gh-pages-deploy:gh-pages --force
+
+          echo "✅ Appcast deployed to gh-pages"
 
       # ─── Cleanup keychain ───
       - name: Cleanup

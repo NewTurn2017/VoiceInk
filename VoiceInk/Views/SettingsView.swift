@@ -3,9 +3,12 @@ import ServiceManagement
 import Qwen3ASR
 
 struct SettingsView: View {
+    @EnvironmentObject var updaterManager: UpdaterManager
+
     var body: some View {
         TabView {
             GeneralSettingsTab()
+                .environmentObject(updaterManager)
                 .tabItem {
                     Label("General", systemImage: "gear")
                 }
@@ -27,6 +30,7 @@ struct SettingsView: View {
 // MARK: - General Tab
 
 struct GeneralSettingsTab: View {
+    @EnvironmentObject var updaterManager: UpdaterManager
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @AppStorage("holdToTalk") private var holdToTalk = false
 
@@ -71,6 +75,17 @@ struct GeneralSettingsTab: View {
                     Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0")
                         .foregroundStyle(.secondary)
                 }
+
+                Toggle("Automatically check for updates",
+                       isOn: Binding(
+                           get: { updaterManager.automaticallyChecksForUpdates },
+                           set: { updaterManager.automaticallyChecksForUpdates = $0 }
+                       ))
+
+                Button("Check for Updates...") {
+                    updaterManager.checkForUpdates()
+                }
+                .disabled(!updaterManager.canCheckForUpdates)
             } header: {
                 Text("About")
             }

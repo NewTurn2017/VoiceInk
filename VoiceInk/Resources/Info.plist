@@ -22,5 +22,9 @@
     <true/>
     <key>NSMicrophoneUsageDescription</key>
     <string>VoiceInk needs microphone access to transcribe your speech.</string>
+    <key>SUFeedURL</key>
+    <string>https://newturn2017.github.io/VoiceInk/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>44JMfuhD9wodqkPx/GL+xHWteYRACSO9XJU6KtC31WU=</string>
 </dict>
 </plist>
