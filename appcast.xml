@@ -1,0 +1,17 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+  <channel>
+    <title>VoiceInk Updates</title>
+    <item>
+      <title>VoiceInk 1.2.0</title>
+      <sparkle:version>1.2.0</sparkle:version>
+      <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+      <pubDate>Tue, 24 Mar 2026 07:23:40 +0000</pubDate>
+      <enclosure
+        url="https://github.com/NewTurn2017/VoiceInk/releases/download/v1.2.0/VoiceInk.dmg"
+        sparkle:edSignature=YZGDGIIQMJgFEliuvL8mlnXXnVq83eLvC526rzUAO7z61m561dIbNNZPtIVl5/zYmlfYqvgzC8CxNiEdFCd+DA== length=6558680
+        length="6558680"
+        type="application/octet-stream" />
+    </item>
+  </channel>
+</rss>
