@@ -215,6 +215,7 @@ jobs:
           DMG_PATH="$RUNNER_TEMP/$APP_NAME.dmg"
 
           # Download Sparkle binary tools
+          mkdir -p "$RUNNER_TEMP/sparkle-tools"
           curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/2.9.0/Sparkle-2.9.0.tar.xz" \
             | tar xJ -C "$RUNNER_TEMP/sparkle-tools"
           SIGN_TOOL="$RUNNER_TEMP/sparkle-tools/bin/sign_update"
