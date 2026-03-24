@@ -91,17 +91,22 @@ jobs:
           APP_PATH="$RUNNER_TEMP/$APP_NAME.xcarchive/Products/Applications/$APP_NAME.app"
           cp -R "$APP_PATH" "$RUNNER_TEMP/$APP_NAME.app"
 
-          # Re-sign all Sparkle embedded components with Developer ID
+          # Re-sign all embedded components with Developer ID (inside-out)
           APP="$RUNNER_TEMP/$APP_NAME.app"
           IDENTITY="Developer ID Application"
 
-          # Sign Sparkle XPC services and helpers (deepest first)
-          find "$APP" -name "*.xpc" -o -name "*.app" -o -name "*.framework" -o -name "*.dylib" | sort -r | while read component; do
-            [ "$component" = "$APP" ] && continue
+          # 1. Sign all Mach-O executables (e.g., Sparkle's Autoupdate, Updater.app)
+          find "$APP" -type f -perm +111 | while read f; do
+            file "$f" | grep -q "Mach-O" && \
+              codesign --force --options runtime --timestamp --sign "$IDENTITY" "$f" 2>/dev/null || true
+          done
+
+          # 2. Sign bundles: .xpc, .app, .framework (deepest first)
+          find "$APP" \( -name "*.xpc" -o -name "*.app" -o -name "*.framework" \) -not -path "$APP" | sort -r | while read component; do
             codesign --force --options runtime --timestamp --sign "$IDENTITY" "$component" 2>/dev/null || true
           done
 
-          # Re-sign the main app
+          # 3. Re-sign the main app last
           codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
 
           # Verify code signature
