@@ -72,14 +72,14 @@ Run from repo root `/Users/genie/dev/side/VoiceInk`.
 - Modify: `project.yml`
 - Delete: `VoiceInk/STT/STTEngine.swift`, `VoiceInk/STT/LocalSTTEngine.swift`, `VoiceInk/STT/CloudSTTEngine.swift`, `VoiceInk/STT/ModelConfiguration.swift`
 
-- [ ] **Step 1: Delete the four old STT files**
+- [x] **Step 1: Delete the four old STT files**
 
 ```bash
 cd /Users/genie/dev/side/VoiceInk
 git rm VoiceInk/STT/STTEngine.swift VoiceInk/STT/LocalSTTEngine.swift VoiceInk/STT/CloudSTTEngine.swift VoiceInk/STT/ModelConfiguration.swift
 ```
 
-- [ ] **Step 2: Edit `project.yml` — remove Qwen3Speech package and dependency, add test target + scheme**
+- [x] **Step 2: Edit `project.yml` — remove Qwen3Speech package and dependency, add test target + scheme**
 
 Replace the `packages:` block so only Sparkle remains:
 
@@ -128,7 +128,7 @@ schemes:
     run: {}
 ```
 
-- [ ] **Step 3: Create the test sources directory with a placeholder so XcodeGen accepts it**
+- [x] **Step 3: Create the test sources directory with a placeholder so XcodeGen accepts it**
 
 ```bash
 mkdir -p VoiceInkTests
@@ -147,7 +147,7 @@ final class SmokeTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 4: Regenerate and build**
+- [x] **Step 4: Regenerate and build**
 
 Run: `xcodegen generate`
 Expected: "Created project at VoiceInk.xcodeproj". The app will no longer compile yet because `AppState.swift` and `SettingsView.swift` still reference deleted types — that is fixed in Phase 1. For now just confirm generation succeeds and the package graph drops MLX/hummingbird/nio:
@@ -155,7 +155,7 @@ Expected: "Created project at VoiceInk.xcodeproj". The app will no longer compil
 Run: `xcodebuild -list -project VoiceInk.xcodeproj 2>&1 | tail -20`
 Expected: "Qwen3Speech" no longer in the resolved packages list; schemes include `VoiceInk`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -171,7 +171,7 @@ git commit -m "chore: drop Qwen3Speech + old STT engines, add test target"
 **Files:**
 - Modify: `VoiceInk/STT/STTStatus.swift`
 
-- [ ] **Step 1: Replace file contents**
+- [x] **Step 1: Replace file contents**
 
 ```swift
 import Foundation
@@ -184,7 +184,7 @@ enum STTStatus: Equatable {
 }
 ```
 
-- [ ] **Step 2: Commit** (build still red until Phase 9 — that's expected)
+- [x] **Step 2: Commit** (build still red until Phase 9 — that's expected)
 
 ```bash
 git add VoiceInk/STT/STTStatus.swift
@@ -196,7 +196,7 @@ git commit -m "refactor: STTStatus add .processing, drop .connecting"
 **Files:**
 - Modify: `VoiceInk/Security/KeychainManager.swift`
 
-- [ ] **Step 1: Replace the `APIKeyService` enum**
+- [x] **Step 1: Replace the `APIKeyService` enum**
 
 ```swift
 enum APIKeyService: String {
@@ -206,7 +206,7 @@ enum APIKeyService: String {
 
 Leave the rest of `KeychainManager` unchanged.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add VoiceInk/Security/KeychainManager.swift
@@ -223,7 +223,7 @@ git commit -m "refactor: keychain service for Gemini API key"
 - Create: `VoiceInk/Pipeline/WAVEncoder.swift`
 - Test: `VoiceInkTests/WAVEncoderTests.swift`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `VoiceInkTests/WAVEncoderTests.swift`:
 
@@ -268,14 +268,14 @@ final class WAVEncoderTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -only-testing:VoiceInkTests/WAVEncoderTests -quiet`
 Expected: FAIL — "cannot find 'WAVEncoder' in scope".
 
 > If the whole module fails to build because Phase 9 hasn't run, temporarily run only this test target after Task 9; otherwise the encoder file compiles on its own. If module build is red, proceed to write the implementation (Step 3) and defer running until the module is green; mark this checkbox once the test passes after Phase 9. Prefer: implement now, run after Phase 9.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `VoiceInk/Pipeline/WAVEncoder.swift`:
 
@@ -315,12 +315,12 @@ enum WAVEncoder {
 }
 ```
 
-- [ ] **Step 4: Run test (after module is green / Phase 9) to verify it passes**
+- [x] **Step 4: Run test (after module is green / Phase 9) to verify it passes**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -only-testing:VoiceInkTests/WAVEncoderTests -quiet`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add VoiceInk/Pipeline/WAVEncoder.swift VoiceInkTests/WAVEncoderTests.swift
@@ -338,7 +338,7 @@ git commit -m "feat: WAV encoder for 16k mono PCM"
 - Create: `VoiceInk/Dictation/PromptLibrary.swift`
 - Test: `VoiceInkTests/PromptLibraryTests.swift`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `VoiceInkTests/PromptLibraryTests.swift`:
 
@@ -367,12 +367,12 @@ final class PromptLibraryTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -only-testing:VoiceInkTests/PromptLibraryTests -quiet`
 Expected: FAIL — "cannot find 'DictationMode'".
 
-- [ ] **Step 3: Write the implementations**
+- [x] **Step 3: Write the implementations**
 
 Create `VoiceInk/Dictation/DictationMode.swift`:
 
@@ -434,12 +434,12 @@ enum PromptLibrary {
 }
 ```
 
-- [ ] **Step 4: Run test (after module green) to verify it passes**
+- [x] **Step 4: Run test (after module green) to verify it passes**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -only-testing:VoiceInkTests/PromptLibraryTests -quiet`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add VoiceInk/Dictation/DictationMode.swift VoiceInk/Dictation/PromptLibrary.swift VoiceInkTests/PromptLibraryTests.swift
@@ -455,7 +455,7 @@ git commit -m "feat: dictation modes and prompt library"
 **Files:**
 - Create: `VoiceInk/Pipeline/SpeechPipeline.swift`
 
-- [ ] **Step 1: Write the implementation** (protocol/types have no standalone test; covered by Task 4.2)
+- [x] **Step 1: Write the implementation** (protocol/types have no standalone test; covered by Task 4.2)
 
 Create `VoiceInk/Pipeline/SpeechPipeline.swift`:
 
@@ -493,7 +493,7 @@ protocol SpeechPipeline {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add VoiceInk/Pipeline/SpeechPipeline.swift
@@ -505,7 +505,7 @@ git commit -m "feat: SpeechPipeline protocol and types"
 **Files:**
 - Create: `VoiceInkTests/MockURLProtocol.swift`
 
-- [ ] **Step 1: Write the helper**
+- [x] **Step 1: Write the helper**
 
 Create `VoiceInkTests/MockURLProtocol.swift`:
 
@@ -573,7 +573,7 @@ final class MockURLProtocol: URLProtocol {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add VoiceInkTests/MockURLProtocol.swift
@@ -586,7 +586,7 @@ git commit -m "test: add MockURLProtocol helper"
 - Create: `VoiceInk/Pipeline/GeminiPipeline.swift`
 - Test: `VoiceInkTests/GeminiPipelineTests.swift`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `VoiceInkTests/GeminiPipelineTests.swift`:
 
@@ -669,12 +669,12 @@ final class GeminiPipelineTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -only-testing:VoiceInkTests/GeminiPipelineTests -quiet`
 Expected: FAIL — "cannot find 'GeminiPipeline'".
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `VoiceInk/Pipeline/GeminiPipeline.swift`:
 
@@ -770,12 +770,12 @@ final class GeminiPipeline: SpeechPipeline {
 }
 ```
 
-- [ ] **Step 4: Run tests (after module green) to verify they pass**
+- [x] **Step 4: Run tests (after module green) to verify they pass**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -only-testing:VoiceInkTests/GeminiPipelineTests -quiet`
 Expected: PASS (all 5).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add VoiceInk/Pipeline/GeminiPipeline.swift VoiceInkTests/GeminiPipelineTests.swift
@@ -792,7 +792,7 @@ git commit -m "feat: Gemini one-call speech pipeline"
 - Modify: `VoiceInk/TextInput/TextInputService.swift`
 - Test: `VoiceInkTests/TextInputServiceTests.swift`
 
-- [ ] **Step 1: Write the failing test for the pure role helper**
+- [x] **Step 1: Write the failing test for the pure role helper**
 
 Create `VoiceInkTests/TextInputServiceTests.swift`:
 
@@ -816,12 +816,12 @@ final class TextInputServiceTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -only-testing:VoiceInkTests/TextInputServiceTests -quiet`
 Expected: FAIL — "type 'TextInputService' has no member 'isEditableRole'".
 
-- [ ] **Step 3: Replace `TextInputService.swift`**
+- [x] **Step 3: Replace `TextInputService.swift`**
 
 ```swift
 import Cocoa
@@ -913,12 +913,12 @@ final class TextInputService {
 }
 ```
 
-- [ ] **Step 4: Run test (after module green) to verify it passes**
+- [x] **Step 4: Run test (after module green) to verify it passes**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -only-testing:VoiceInkTests/TextInputServiceTests -quiet`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add VoiceInk/TextInput/TextInputService.swift VoiceInkTests/TextInputServiceTests.swift
@@ -934,7 +934,7 @@ git commit -m "feat: AX-aware text insertion with clipboard fallback"
 **Files:**
 - Create: `VoiceInk/Views/ResultModal.swift`
 
-- [ ] **Step 1: Write the implementation**
+- [x] **Step 1: Write the implementation**
 
 Create `VoiceInk/Views/ResultModal.swift`:
 
@@ -1024,7 +1024,7 @@ final class ResultModalController {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add VoiceInk/Views/ResultModal.swift
@@ -1040,7 +1040,7 @@ git commit -m "feat: crystal-glass result modal for no-cursor fallback"
 **Files:**
 - Modify: `VoiceInk/Hotkey/HotkeyManager.swift`
 
-- [ ] **Step 1: Replace `HotkeyManager.swift`**
+- [x] **Step 1: Replace `HotkeyManager.swift`**
 
 ```swift
 import Carbon
@@ -1116,7 +1116,7 @@ final class HotkeyManager {
 }
 ```
 
-- [ ] **Step 2: Commit** (build still red until AppState refactor)
+- [x] **Step 2: Commit** (build still red until AppState refactor)
 
 ```bash
 git add VoiceInk/Hotkey/HotkeyManager.swift
@@ -1132,7 +1132,7 @@ git commit -m "feat: per-mode global hotkeys (opt+space, shift+opt+space)"
 **Files:**
 - Modify: `VoiceInk/Audio/AudioSessionManager.swift`
 
-- [ ] **Step 1: Remove the Float32 path**
+- [x] **Step 1: Remove the Float32 path**
 
 In `AudioSessionManager.swift`, delete everything related to `onAudioFloat` / `float32Converter` / `AudioFloatHandler` / `convertToFloat32`:
 - Remove `typealias AudioFloatHandler` and the `onAudioFloat` / `float32Converter` properties.
@@ -1143,7 +1143,7 @@ In `AudioSessionManager.swift`, delete everything related to `onAudioFloat` / `f
 
 The Int16 capture path (`convertToInt16Data`, reconnection) stays unchanged.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add VoiceInk/Audio/AudioSessionManager.swift
@@ -1155,7 +1155,7 @@ git commit -m "refactor: drop unused Float32 capture path"
 **Files:**
 - Create: `VoiceInk/Dictation/DictationController.swift`
 
-- [ ] **Step 1: Write the implementation**
+- [x] **Step 1: Write the implementation**
 
 Create `VoiceInk/Dictation/DictationController.swift`:
 
@@ -1292,7 +1292,7 @@ final class DictationController {
 
 > Note: `history.add(text:engineType:)` reuses the existing `TranscriptHistoryManager` signature; we pass the mode display name in the `engineType` label slot. (Renaming that parameter is out of scope.)
 
-- [ ] **Step 2: Commit** (build still red until AppState)
+- [x] **Step 2: Commit** (build still red until AppState)
 
 ```bash
 git add VoiceInk/Dictation/DictationController.swift
@@ -1308,7 +1308,7 @@ git commit -m "feat: dictation controller (record buffer to pipeline to insert)"
 **Files:**
 - Modify: `VoiceInk/AppState.swift`
 
-- [ ] **Step 1: Replace `AppState.swift`**
+- [x] **Step 1: Replace `AppState.swift`**
 
 ```swift
 import SwiftUI
@@ -1426,12 +1426,12 @@ final class AppState: ObservableObject {
 }
 ```
 
-- [ ] **Step 2: Build the whole module**
+- [x] **Step 2: Build the whole module**
 
 Run: `xcodebuild build -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -quiet`
 Expected: BUILD SUCCEEDED. If `MenuBarView` / `SettingsView` / `RecordingOverlay` still reference removed symbols (`engineType`, `modelSize`, `.connecting`, `holdToTalk`), they are fixed in Phases 10–11; if the build fails only inside those three view files, proceed to Phase 10/11 then return here. Otherwise fix any AppState compile errors now.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add VoiceInk/AppState.swift
@@ -1440,14 +1440,14 @@ git commit -m "refactor: AppState drives DictationController + Gemini, test guar
 
 ### Task 9.2: Run the full logic test suite
 
-- [ ] **Step 1: Run all tests**
+- [x] **Step 1: Run all tests**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -quiet`
 Expected: PASS — WAVEncoderTests, PromptLibraryTests, GeminiPipelineTests, TextInputServiceTests, SmokeTests all green.
 
 > If signing fails for the test bundle, retry with `CODE_SIGNING_ALLOWED=NO` appended.
 
-- [ ] **Step 2: Go back and check the deferred test checkboxes** in Tasks 2.1, 3.1, 4.3, 5.1 (their Step 4 "verify it passes") — mark them complete now that the module is green.
+- [x] **Step 2: Go back and check the deferred test checkboxes** in Tasks 2.1, 3.1, 4.3, 5.1 (their Step 4 "verify it passes") — mark them complete now that the module is green.
 
 ---
 
@@ -1458,7 +1458,7 @@ Expected: PASS — WAVEncoderTests, PromptLibraryTests, GeminiPipelineTests, Tex
 **Files:**
 - Modify: `VoiceInk/Views/RecordingOverlay.swift`
 
-- [ ] **Step 1: Replace `RecordingOverlay.swift`**
+- [x] **Step 1: Replace `RecordingOverlay.swift`**
 
 ```swift
 import SwiftUI
@@ -1584,12 +1584,12 @@ final class RecordingOverlayController {
 }
 ```
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `xcodebuild build -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -quiet`
 Expected: BUILD SUCCEEDED (overlay no longer references `engineType`/`modelSize`).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add VoiceInk/Views/RecordingOverlay.swift
@@ -1605,7 +1605,7 @@ git commit -m "feat: crystal-glass overlay (waveform + thinking shimmer)"
 **Files:**
 - Modify: `VoiceInk/Views/MenuBarView.swift`
 
-- [ ] **Step 1: Replace `MenuBarView.swift`**
+- [x] **Step 1: Replace `MenuBarView.swift`**
 
 ```swift
 import SwiftUI
@@ -1698,7 +1698,7 @@ struct MenuBarView: View {
 }
 ```
 
-- [ ] **Step 2: Build, then commit**
+- [x] **Step 2: Build, then commit**
 
 Run: `xcodebuild build -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -quiet`
 Expected: BUILD SUCCEEDED.
@@ -1713,7 +1713,7 @@ git commit -m "feat: menu bar for two dictation modes + Gemini model"
 **Files:**
 - Modify: `VoiceInk/Views/SettingsView.swift`
 
-- [ ] **Step 1: Replace `SettingsView.swift`**
+- [x] **Step 1: Replace `SettingsView.swift`**
 
 ```swift
 import SwiftUI
@@ -1873,17 +1873,17 @@ struct APIKeysSettingsTab: View {
 }
 ```
 
-- [ ] **Step 2: Build the whole app**
+- [x] **Step 2: Build the whole app**
 
 Run: `xcodebuild build -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -quiet`
 Expected: BUILD SUCCEEDED with no references to `Qwen3ASR`, `STTEngineType`, `STTModelSize`, `holdToTalk`, or `.elevenLabs`.
 
-- [ ] **Step 3: Run all tests**
+- [x] **Step 3: Run all tests**
 
 Run: `xcodebuild test -project VoiceInk.xcodeproj -scheme VoiceInk -destination 'platform=macOS' -quiet`
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add VoiceInk/Views/SettingsView.swift
