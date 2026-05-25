@@ -56,7 +56,8 @@ Typeless(유료 SaaS 받아쓰기 앱)를 완전히 대체하는 오픈소스 ma
 - `TextInput/TextInputService.swift` — AX 포커스 판정 + 모달 폴백 추가
 - `Security/KeychainManager.swift` — 서비스 키만 교체
 - `History/TranscriptHistoryManager.swift`
-- `Views/RecordingOverlay.swift`, `Views/MenuBarView.swift`, `Views/SettingsView.swift`
+- `Views/MenuBarView.swift`, `Views/SettingsView.swift`
+- `Views/RecordingOverlay.swift` — NSPanel 셋업은 재사용하되 뷰는 알약형으로 **재설계**(8장)
 - `Utilities/SoundPlayer.swift`, `Utilities/AccessibilityHelper.swift`
 - `Update/UpdaterManager.swift` (Sparkle)
 - `Resources/Info.plist`, `Resources/VoiceInk.entitlements` (sandbox off, mic on — 그대로)
@@ -123,8 +124,8 @@ idle / recording / processing / error(String?)
 
 ```
 ① ⌥Space (idle)   → DictationController.start(mode: .cleanup)
-② 캡처 시작        → AudioSessionManager(Int16 16kHz) → Data 누적 + 레벨 → 오버레이 "Listening…"
-③ ⌥Space (재입력)  → 캡처 중지 → 버퍼→WAV → status=.processing → 오버레이 "Polishing…"
+② 캡처 시작        → AudioSessionManager(Int16 16kHz) → Data 누적 + 레벨 → 오버레이 캡슐: 실시간 파형
+③ ⌥Space (재입력)  → 캡처 중지 → 버퍼→WAV → status=.processing → 오버레이 캡슐: "Thinking…" + 짧은 프로그래스
 ④ Gemini 호출      → pipeline.process(audio, mode) → 정리 텍스트
 ⑤ 삽입            → TextInputService.insert(text):
                       ├─ 편집 요소 포커스됨 → 클립보드+Cmd+V (transient 태깅, 이전 클립보드 복원)
@@ -173,7 +174,40 @@ enum InsertResult { case pasted, copiedToClipboard }
 
 AX 판정 로직은 순수 함수(예: role 문자열 → 편집 가능 여부)로 분리해 단위 테스트.
 
-## 8. 설정 UI
+## 8. 오버레이 & 모달 UI (투명 알약형)
+
+전체 UI는 **투명/반투명**의 컴팩트한 **알약(캡슐) 형태** 떠있는 패널. 화면 상단(또는 하단) 중앙. `NSPanel`(`.nonactivatingPanel`, `.floating`, 배경 clear, 포커스 안 뺏음) + SwiftUI 콘텐츠. 참고 이미지: 어두운 반투명 캡슐에 "Thinking" 라벨.
+
+```
+ idle:        (숨김)
+
+ recording:   ╭───────────────────╮
+              │ ● ▁▃▆█▅▂▄  파형     │   ← appState.audioLevel에 반응
+              ╰───────────────────╯
+
+ processing:  ╭───────────────────╮
+              │  Thinking…  ▓▓▓░░   │   ← 짧은 인디터미네이트 프로그래스
+              ╰───────────────────╯
+```
+
+상태별:
+
+- **idle**: 숨김.
+- **recording**: 캡슐 안에 **실시간 파형**(마이크 인식 시각화). `appState.audioLevel`에 반응하는 막대 5~7개가 움직임. 좌측에 작은 녹음 점(●).
+- **processing**: 캡슐 안에 "Thinking…" + **짧은 인디터미네이트 프로그래스**(얇은 진행바 또는 흐르는 shimmer/점 애니메이션). 파형 자리를 진행 표시로 교체.
+
+디자인 원칙:
+
+- 배경: `.ultraThinMaterial` 위 어두운 틴트(또는 `Color.black.opacity(~0.6)` + blur), 모서리 완전 둥근 **capsule**, 약한 그림자.
+- 폭은 콘텐츠에 맞춰 가변(파형/라벨 길이), 높이 ~28–32pt.
+- 클릭 시 녹음 중지/취소(옵션). 비활성 패널이라 활성 앱 포커스를 뺏지 않음.
+- `RecordingOverlayView`를 이 캡슐 디자인으로 재설계, `RecordingOverlayController`의 NSPanel 셋업(위치/레벨/collectionBehavior)은 재사용하고 크기·배경만 조정.
+
+### 결과 모달
+
+커서 없을 때의 `ResultModal`도 같은 투명/둥근 미감: 반투명 카드에 결과 텍스트(스크롤 가능, 최대 높이 제한) + "📋 클립보드에 복사됨" + 복사/닫기 버튼. 화면 중앙.
+
+## 9. 설정 UI
 
 `SettingsView` 탭 재구성:
 
@@ -181,31 +215,32 @@ AX 판정 로직은 순수 함수(예: role 문자열 → 편집 가능 여부)�
 - **Model**: Gemini 모델 선택(`GeminiModel`: gemini-3-flash / gemini-2.5-flash-lite 등 — 구현 시 최신 ID 확인). 기본 언어 안내.
 - **API Key**: ElevenLabs → **Google AI(Gemini) API 키**. `APIKeyService.gemini` 추가, `.elevenLabs` 제거. 안내 문구: "aistudio.google.com에서 발급".
 
-## 9. 에러 처리
+## 10. 에러 처리
 
 - API 키 없음 → 녹음 시작 시 알림(`showErrorAlert` 재사용, "Open Settings" 버튼으로 API Key 탭 이동).
 - 빈/무음 녹음 → 조용히 무시.
 - 네트워크/API 오류(4xx/5xx/타임아웃) → 오버레이 또는 알림에 메시지 표시, 클립보드 변경 없음, 원본 클립보드 보존.
 - 녹음 길이 캡(기본 10분) 초과 → 자동 종료 + 경고.
 
-## 10. 테스트
+## 11. 테스트
 
 - `WAVEncoder`: RIFF 헤더 바이트(샘플레이트/채널/비트/데이터 길이) 단위 검증.
 - `GeminiPipeline`: `URLProtocol` 목으로 (a) 요청 본문에 system_instruction·오디오 파트 포함, (b) 정상 응답 파싱, (c) 4xx/5xx/타임아웃 → 올바른 `PipelineError` 매핑.
 - `PromptLibrary`/`DictationMode`: 모드 → 프롬프트 매핑.
 - `TextInputService`: AX role → 편집 가능 판정 순수 함수. 실제 CGEvent 붙여넣기·모달은 수동 통합 테스트(체크리스트).
 
-## 11. 마일스톤(개략)
+## 12. 마일스톤(개략)
 
 1. 의존성/엔진 제거 + 빌드 통과(스텁 파이프라인).
 2. `WAVEncoder` + `SpeechPipeline`/`GeminiPipeline` + 테스트.
 3. `DictationController` + `AppState` 리팩터(토글, processing 상태).
 4. 다중 핫키(`HotkeyManager`) + `DictationMode`/`PromptLibrary`.
 5. `TextInputService` AX 판정 + `ResultModal` 폴백.
-6. 설정 UI 재구성 + `APIKeyService.gemini`.
-7. 수동 통합 검증(실제 한국어 발화 5~10건), 고유명사 케이스 관찰.
+6. 오버레이 캡슐 재설계(파형 / Thinking 프로그래스) + 결과 모달 UI.
+7. 설정 UI 재구성 + `APIKeyService.gemini`.
+8. 수동 통합 검증(실제 한국어 발화 5~10건), 고유명사 케이스 관찰.
 
-## 12. 비목표 (이번 범위 밖)
+## 13. 비목표 (이번 범위 밖)
 
 - 실시간/스트리밍 전사, 라이브 부분 자막.
 - 2단계 파이프라인(전용 STT→LLM), 멀티 벤더 선택 UI (추상화만 마련).
