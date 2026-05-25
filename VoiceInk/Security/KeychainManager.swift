@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 enum APIKeyService: String {
-    case elevenLabs = "com.voiceink.elevenlabs-api-key"
+    case gemini = "com.voiceink.gemini-api-key"
 }
 
 final class KeychainManager {
