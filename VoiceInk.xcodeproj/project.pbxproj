@@ -35,6 +35,7 @@
 		E842D3ED64FC8A35B98BE96B /* PromptLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1791C8AA9F9A566858B1364D /* PromptLibrary.swift */; };
 		EB85D43829C5C38726B37628 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A210666441B1FC07032F6 /* UpdaterManager.swift */; };
 		F10F167269DF87038677B2C5 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50761F3537321A21EC0FF99F /* MenuBarView.swift */; };
+		F235C0BC02685ED60E2E09B9 /* AudioSessionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30BF69A6F64285006D0C50A5 /* AudioSessionManagerTests.swift */; };
 		F6B27FC1D36FCBFE24E503FB /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C11CB83B475DAAED9303701 /* AudioSessionManager.swift */; };
 /* End PBXBuildFile section */
 
@@ -53,6 +54,7 @@
 		1791C8AA9F9A566858B1364D /* PromptLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptLibrary.swift; sourceTree = "<group>"; };
 		199EA699089EE027E432C012 /* ResultModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultModal.swift; sourceTree = "<group>"; };
 		2C0E7583CB6B50E2FCDCA4CB /* SpeechPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechPipeline.swift; sourceTree = "<group>"; };
+		30BF69A6F64285006D0C50A5 /* AudioSessionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManagerTests.swift; sourceTree = "<group>"; };
 		30C9AD9F7765C93B0EE6212E /* GeminiPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiPipelineTests.swift; sourceTree = "<group>"; };
 		454F144A758D9A5401D0A224 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		45E7788B4CAC51BCD9A74222 /* DictationMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationMode.swift; sourceTree = "<group>"; };
@@ -168,6 +170,7 @@
 		7FD96525BDC95E886859B25D /* VoiceInkTests */ = {
 			isa = PBXGroup;
 			children = (
+				30BF69A6F64285006D0C50A5 /* AudioSessionManagerTests.swift */,
 				30C9AD9F7765C93B0EE6212E /* GeminiPipelineTests.swift */,
 				8A3957570C3BDB137E3FAD10 /* MockURLProtocol.swift */,
 				7AEF9532F07A25E8CEFC21DB /* PromptLibraryTests.swift */,
@@ -380,6 +383,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F235C0BC02685ED60E2E09B9 /* AudioSessionManagerTests.swift in Sources */,
 				566F1C9D678EC1563E1DCFAC /* GeminiPipelineTests.swift in Sources */,
 				5BCFE26AE9D79BCA7436B436 /* MockURLProtocol.swift in Sources */,
 				735EF0A9B938AFC9E6EB2C74 /* PromptLibraryTests.swift in Sources */,

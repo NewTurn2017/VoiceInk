@@ -73,4 +73,14 @@ final class GeminiPipelineTests: XCTestCase {
         do { _ = try await pipeline.process(audio, mode: .cleanup); XCTFail("expected throw") }
         catch { XCTAssertEqual(error as? PipelineError, .noText) }
     }
+
+    func testMultiPartTextIsConcatenated() async throws {
+        MockURLProtocol.handler = { _, _ in
+            let json = #"{"candidates":[{"content":{"parts":[{"text":"a"},{"text":"b"}]}}]}"#
+            return (200, Data(json.utf8))
+        }
+        let pipeline = makePipeline()
+        let result = try await pipeline.process(audio, mode: .cleanup)
+        XCTAssertEqual(result, "ab")
+    }
 }
