@@ -9,9 +9,7 @@ final class AppState: ObservableObject {
 
     /// Single source of truth for the model is UserDefaults["geminiModel"], written by
     /// the Settings @AppStorage picker. Read-only convenience for display.
-    var geminiModel: GeminiModel {
-        GeminiModel(rawValue: UserDefaults.standard.string(forKey: "geminiModel") ?? "") ?? .flash
-    }
+    var geminiModel: GeminiModel { GeminiModel.current }
 
     private let keychainManager = KeychainManager.shared
     private let audioManager = AudioSessionManager()
@@ -43,7 +41,7 @@ final class AppState: ObservableObject {
 
         let pipeline = GeminiPipeline(
             apiKeyProvider: { [keychainManager] in keychainManager.getAPIKey(for: .gemini) },
-            model: { GeminiModel(rawValue: UserDefaults.standard.string(forKey: "geminiModel") ?? "") ?? .flash }
+            model: { GeminiModel.current }
         )
         let controller = DictationController(
             audioManager: audioManager,

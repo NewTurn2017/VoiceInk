@@ -41,6 +41,7 @@ final class TextInputService {
         var focused: AnyObject?
         let err = AXUIElementCopyAttributeValue(system, kAXFocusedUIElementAttribute as CFString, &focused)
         guard err == .success, let focused = focused else { return false }
+        guard CFGetTypeID(focused) == AXUIElementGetTypeID() else { return false }
         let element = focused as! AXUIElement
 
         var roleValue: AnyObject?

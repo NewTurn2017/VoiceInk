@@ -13,6 +13,11 @@ enum GeminiModel: String, CaseIterable {
         case .flashEconomy: return "Gemini 2.5 Flash (economy)"
         }
     }
+
+    /// The currently selected model from UserDefaults["geminiModel"], defaulting to `.flash`.
+    static var current: GeminiModel {
+        GeminiModel(rawValue: UserDefaults.standard.string(forKey: "geminiModel") ?? "") ?? .flash
+    }
 }
 
 final class GeminiPipeline: SpeechPipeline {
