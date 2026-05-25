@@ -19,6 +19,8 @@ DerivedData/
 # Build output
 VoiceType.app/
 *.app/
+.build-run/
+.omx/
 
 # bkit state
 .bkit/

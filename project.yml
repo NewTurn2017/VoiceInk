@@ -15,9 +15,6 @@ settings:
     SWIFT_VERSION: "5.9"
 
 packages:
-  Qwen3Speech:
-    url: https://github.com/soniqo/speech-swift
-    branch: main
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     exactVersion: "2.9.0"
@@ -40,7 +37,27 @@ targets:
         MARKETING_VERSION: "1.2.0"
         CURRENT_PROJECT_VERSION: 1
     dependencies:
-      - package: Qwen3Speech
-        product: Qwen3ASR
       - package: Sparkle
         product: Sparkle
+
+  VoiceInkTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: VoiceInkTests
+    dependencies:
+      - target: VoiceInk
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.voiceink.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  VoiceInk:
+    build:
+      targets:
+        VoiceInk: all
+    test:
+      targets:
+        - VoiceInkTests
+    run: {}
