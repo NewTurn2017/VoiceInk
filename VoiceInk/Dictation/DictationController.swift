@@ -21,7 +21,6 @@ final class DictationController {
         didSet { onStatusChange?(status) }
     }
 
-    private var buffer = Data()
     private var currentMode: DictationMode = .cleanup
 
     init(audioManager: AudioSessionManager,
@@ -55,7 +54,6 @@ final class DictationController {
             return
         }
         currentMode = mode
-        buffer.removeAll(keepingCapacity: true)
 
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
@@ -74,18 +72,13 @@ final class DictationController {
 
     private func beginCapture() {
         status = .recording
-        audioManager.startCapture { [weak self] data in
-            guard let self else { return }
-            Task { @MainActor in
-                self.buffer.append(data)
-            }
-            self.onAudioLevel?(Self.energy(of: data))
-        }
+        audioManager.startCapture(onLevel: { [weak self] level in
+            Task { @MainActor in self?.onAudioLevel?(level) }
+        })
     }
 
     private func stopAndProcess() {
-        audioManager.stopCapture()
-        let captured = buffer
+        let captured = audioManager.stopCapture()
         // Ignore very short / empty recordings (< ~0.2s at 16k * 2 bytes/sample).
         guard captured.count > sampleRate * 2 / 5 else {
             status = .idle
@@ -111,18 +104,6 @@ final class DictationController {
                 try? await Task.sleep(nanoseconds: 2_500_000_000)
                 if case .error = status { status = .idle }
             }
-        }
-    }
-
-    static func energy(of data: Data) -> Float {
-        data.withUnsafeBytes { raw -> Float in
-            guard let base = raw.baseAddress else { return 0 }
-            let samples = base.assumingMemoryBound(to: Int16.self)
-            let count = data.count / 2
-            guard count > 0 else { return 0 }
-            var sum: Float = 0
-            for i in 0..<count { sum += abs(Float(samples[i]) / Float(Int16.max)) }
-            return sum / Float(count)
         }
     }
 }

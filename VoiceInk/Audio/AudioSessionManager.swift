@@ -2,14 +2,20 @@ import AVFoundation
 import Foundation
 
 final class AudioSessionManager {
-    typealias AudioDataHandler = (Data) -> Void
+    typealias AudioLevelHandler = (Float) -> Void
 
     private var audioEngine: AVAudioEngine?
     private var int16Converter: AVAudioConverter?
-    private var onAudioData: AudioDataHandler?
+    private var onLevel: AudioLevelHandler?
     private var retryCount = 0
     private let maxRetries = 3
     private var isCapturing = false
+
+    /// Accumulates the full 16 kHz mono Int16 recording. Guarded by `accumulatorLock`
+    /// so the audio tap thread and the stop call never race. Persists across an
+    /// AVAudioEngineConfigurationChange reconnect; only `startCapture` clears it.
+    private var accumulator = Data()
+    private let accumulatorLock = NSLock()
 
     init() {
         setupNotifications()
@@ -19,19 +25,30 @@ final class AudioSessionManager {
         NotificationCenter.default.removeObserver(self)
     }
 
-    func startCapture(onAudioData: @escaping AudioDataHandler) {
-        self.onAudioData = onAudioData
+    func startCapture(onLevel: @escaping AudioLevelHandler) {
+        self.onLevel = onLevel
+        accumulatorLock.lock()
+        accumulator.removeAll(keepingCapacity: true)
+        accumulatorLock.unlock()
         retryCount = 0
         startAudioEngine()
     }
 
-    func stopCapture() {
+    /// Stops capture and returns the complete recorded buffer synchronously.
+    @discardableResult
+    func stopCapture() -> Data {
         isCapturing = false
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine = nil
         int16Converter = nil
-        onAudioData = nil
+        onLevel = nil
+
+        accumulatorLock.lock()
+        let data = accumulator
+        accumulator.removeAll()
+        accumulatorLock.unlock()
+        return data
     }
 
     // MARK: - Private
@@ -42,10 +59,8 @@ final class AudioSessionManager {
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
         // Int16 converter for the Gemini pipeline (16 kHz mono).
-        if onAudioData != nil {
-            if let fmt = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1, interleaved: true) {
-                self.int16Converter = AVAudioConverter(from: inputFormat, to: fmt)
-            }
+        if let fmt = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1, interleaved: true) {
+            self.int16Converter = AVAudioConverter(from: inputFormat, to: fmt)
         }
 
         self.audioEngine = engine
@@ -68,11 +83,14 @@ final class AudioSessionManager {
     private func processAudioBuffer(_ buffer: AVAudioPCMBuffer) {
         guard isCapturing else { return }
 
-        if let converter = int16Converter, let handler = onAudioData {
-            if let data = convertToInt16Data(buffer, converter: converter) {
-                handler(data)
-            }
-        }
+        guard let converter = int16Converter,
+              let data = convertToInt16Data(buffer, converter: converter) else { return }
+
+        accumulatorLock.lock()
+        accumulator.append(data)
+        accumulatorLock.unlock()
+
+        onLevel?(Self.energy(ofInt16: data))
     }
 
     private func convertToInt16Data(_ buffer: AVAudioPCMBuffer, converter: AVAudioConverter) -> Data? {
@@ -106,6 +124,19 @@ final class AudioSessionManager {
         return Data(bytes: channelData[0], count: Int(convertedBuffer.frameLength) * 2)
     }
 
+    /// Mean absolute amplitude (0...1) of little-endian Int16 samples in `data`.
+    static func energy(ofInt16 data: Data) -> Float {
+        data.withUnsafeBytes { raw -> Float in
+            guard let base = raw.baseAddress else { return 0 }
+            let samples = base.assumingMemoryBound(to: Int16.self)
+            let count = data.count / 2
+            guard count > 0 else { return 0 }
+            var sum: Float = 0
+            for i in 0..<count { sum += abs(Float(samples[i]) / Float(Int16.max)) }
+            return sum / Float(count)
+        }
+    }
+
     // MARK: - Reconnection
 
     private func setupNotifications() {
@@ -130,7 +161,7 @@ final class AudioSessionManager {
     }
 
     private func attemptReconnect() {
-        guard retryCount < maxRetries, onAudioData != nil else {
+        guard retryCount < maxRetries, onLevel != nil else {
             if retryCount >= maxRetries {
                 print("Max audio reconnect attempts reached (\(maxRetries))")
             }
