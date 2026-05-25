@@ -6,30 +6,28 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack {
-            // Status
             Label(statusText, systemImage: statusIcon)
-
-            if let progress = appState.modelDownloadProgress {
-                ProgressView(value: progress)
-                    .padding(.horizontal)
-                Text("Downloading model: \(Int(progress * 100))%")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
 
             Divider()
 
-            // Record toggle
-            Button(appState.isRecording ? "Stop Recording" : "Start Recording") {
-                appState.toggleRecording()
+            Button(appState.isRecording ? "Stop" : "Clean Up Dictation") {
+                appState.toggle(mode: .cleanup)
             }
             .keyboardShortcut(.space, modifiers: .option)
 
+            Button("Translate to English") {
+                appState.toggle(mode: .translateToEnglish)
+            }
+            .keyboardShortcut(.space, modifiers: [.option, .shift])
+
+            Text("⌥Space clean up · ⇧⌥Space translate")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
             Divider()
 
-            // Recent transcriptions
             if !appState.historyManager.entries.isEmpty {
-                Text("Recent Transcriptions")
+                Text("Recent")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -38,45 +36,30 @@ struct MenuBarView: View {
                         appState.historyManager.copyToClipboard(entry)
                     } label: {
                         HStack {
-                            Text(entry.preview)
-                                .lineLimit(1)
+                            Text(entry.preview).lineLimit(1)
                             Spacer()
-                            Text(entry.timeAgo)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                            Text(entry.timeAgo).font(.caption2).foregroundStyle(.secondary)
                         }
                     }
                 }
 
-                Button("Clear History") {
-                    appState.historyManager.clear()
-                }
-                .foregroundStyle(.secondary)
+                Button("Clear History") { appState.historyManager.clear() }
+                    .foregroundStyle(.secondary)
 
                 Divider()
             }
 
-            // Engine info
-            Text("Engine: \(appState.engineType.displayName)")
+            Text("Model: \(appState.geminiModel.displayName)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            if appState.engineType == .local {
-                Text("Model: \(appState.modelSize.displayName)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
             Divider()
 
-            // Settings — activate app to bring window to front
             Button("Settings...") {
                 NSApp.activate(ignoringOtherApps: true)
                 openSettings()
             }
             .keyboardShortcut(",")
-
-            Divider()
 
             Button("Quit VoiceInk") {
                 NSApplication.shared.terminate(nil)
@@ -88,8 +71,8 @@ struct MenuBarView: View {
     private var statusText: String {
         switch appState.currentStatus {
         case .idle: return "Idle"
-        case .connecting: return "Loading..."
         case .recording: return "Recording"
+        case .processing: return "Thinking…"
         case .error(let msg): return "Error: \(msg ?? "Unknown")"
         }
     }
@@ -97,8 +80,8 @@ struct MenuBarView: View {
     private var statusIcon: String {
         switch appState.currentStatus {
         case .idle: return "mic.slash"
-        case .connecting: return "ellipsis.circle"
         case .recording: return "mic.fill"
+        case .processing: return "ellipsis.circle"
         case .error: return "exclamationmark.triangle"
         }
     }
