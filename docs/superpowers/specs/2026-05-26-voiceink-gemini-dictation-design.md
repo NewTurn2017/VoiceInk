@@ -176,7 +176,7 @@ AX 판정 로직은 순수 함수(예: role 문자열 → 편집 가능 여부)�
 
 ## 8. 오버레이 & 모달 UI (투명 알약형)
 
-전체 UI는 **투명/반투명**의 컴팩트한 **알약(캡슐) 형태** 떠있는 패널. 화면 상단(또는 하단) 중앙. `NSPanel`(`.nonactivatingPanel`, `.floating`, 배경 clear, 포커스 안 뺏음) + SwiftUI 콘텐츠. 참고 이미지: 어두운 반투명 캡슐에 "Thinking" 라벨.
+전체 UI는 **크리스탈 유리(글라스) 느낌**의 투명한 컴팩트 **알약(캡슐)** 떠있는 패널. 화면 상단(또는 하단) 중앙. `NSPanel`(`.nonactivatingPanel`, `.floating`, 배경 clear, 포커스 안 뺏음) + SwiftUI 콘텐츠. 장식은 최소화하고 단순하게.
 
 ```
  idle:        (숨김)
@@ -198,7 +198,7 @@ AX 판정 로직은 순수 함수(예: role 문자열 → 편집 가능 여부)�
 
 디자인 원칙:
 
-- 배경: `.ultraThinMaterial` 위 어두운 틴트(또는 `Color.black.opacity(~0.6)` + blur), 모서리 완전 둥근 **capsule**, 약한 그림자.
+- 배경: **크리스탈 글라스** — `.ultraThinMaterial` 기반 투명 유리에 얇은 밝은 테두리/상단 하이라이트로 굴절·반짝임 느낌. 모서리 완전 둥근 **capsule**, 약한 그림자. macOS 26+에서 `.glassEffect`(Liquid Glass)를 쓸 수 있으면 채택하고, 그 이하(배포 타깃 macOS 14)에서는 material로 폴백. 과한 효과 없이 단순.
 - 폭은 콘텐츠에 맞춰 가변(파형/라벨 길이), 높이 ~28–32pt.
 - 클릭 시 녹음 중지/취소(옵션). 비활성 패널이라 활성 앱 포커스를 뺏지 않음.
 - `RecordingOverlayView`를 이 캡슐 디자인으로 재설계, `RecordingOverlayController`의 NSPanel 셋업(위치/레벨/collectionBehavior)은 재사용하고 크기·배경만 조정.
