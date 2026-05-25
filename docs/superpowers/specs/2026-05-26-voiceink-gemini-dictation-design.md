@@ -19,7 +19,7 @@ Typeless(유료 SaaS 받아쓰기 앱)를 완전히 대체하는 오픈소스 ma
 
 - batch + 한국어에서는 **오디오를 통째로 멀티모달 LLM에 한 번 보내는 방식**이 가장 단순하고 품질도 우수하다. 지연이 무의미해져 스트리밍 2단계의 이점이 사라진다.
 - 멀티모달 LLM 중 한국어 오디오를 신뢰성 있게 처리하는 것은 사실상 **Gemini**뿐(실측 비교에서 Claude는 한국어 음절 깨짐, Kimi는 환각). Claude는 오디오 입력 자체를 지원하지 않는다.
-- 기본 모델: **Gemini 3 Flash**(빠른 모델 중 한국어 텍스트 품질 1위권, ~$0.003/분, 한 콜로 전사+정리+번역). 이코노미 옵션으로 2.5 Flash-Lite.
+- 기본 모델: **`gemini-3.5-flash`**(한 콜로 전사+정리+번역, ~$0.003/분). 이코노미 옵션 `gemini-2.5-flash`. **`thinkingBudget: 0`(추론 off) 고정.** 2026-05-26 실측: 13.6초/103자 한국어 → ~2.0초(3.5-flash)/~2.7초(2.5-flash) 완료, 추론 on은 최대 13.7초까지 튐. flash-lite 계열은 정리 품질 미달로 제외.
 - 유일한 약점은 고유명사·숫자 오전사. 이번 범위에서는 감수하고, 필요 시 향후 2단계(전용 STT→LLM)를 추가할 수 있도록 추상화만 깔아 둔다.
 
 ## 2. 확정된 결정
@@ -101,9 +101,8 @@ protocol SpeechPipeline {
 ### 4.2 GeminiPipeline
 
 - WAV 인코딩(`WAVEncoder`) → base64 인라인 데이터 파트
-- 엔드포인트: `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}`
-  - *정확한 모델 ID와 엔드포인트 경로는 구현 시 최신 Google AI(Gemini API) 문서로 재확인* — 모델명이 자주 바뀐다.
-- 요청 본문: `system_instruction`(모드 프롬프트) + `contents[].parts`에 `inline_data {mime_type: "audio/wav", data: <base64>}`
+- 엔드포인트: `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`, 헤더 `x-goog-api-key`(키를 URL에 노출하지 않음). 2026-05-26 벤치로 검증됨.
+- 요청 본문: `system_instruction`(모드 프롬프트) + `contents[].parts`에 `inline_data {mime_type: "audio/wav", data: <base64>}` + `generationConfig.thinkingConfig.thinkingBudget = 0`
 - 응답 파싱: `candidates[0].content.parts[0].text` → trim
 - `URLSession`을 주입 가능하게 하여 `URLProtocol` 목으로 테스트
 - 오류 매핑: HTTP 4xx(키/권한/요청), 5xx(서버), 타임아웃 → `PipelineError`
@@ -212,7 +211,7 @@ AX 판정 로직은 순수 함수(예: role 문자열 → 편집 가능 여부)�
 `SettingsView` 탭 재구성:
 
 - **General**: Launch at Login, 핫키 안내(⌥Space=정리, ⇧⌥Space=영어 번역 고정 표시), 업데이트 확인. hold-to-talk 토글 제거.
-- **Model**: Gemini 모델 선택(`GeminiModel`: gemini-3-flash / gemini-2.5-flash-lite 등 — 구현 시 최신 ID 확인). 기본 언어 안내.
+- **Model**: Gemini 모델 선택(`GeminiModel`: `gemini-3.5-flash` 기본 / `gemini-2.5-flash` 이코노미). 기본 언어 안내.
 - **API Key**: ElevenLabs → **Google AI(Gemini) API 키**. `APIKeyService.gemini` 추가, `.elevenLabs` 제거. 안내 문구: "aistudio.google.com에서 발급".
 
 ## 10. 에러 처리

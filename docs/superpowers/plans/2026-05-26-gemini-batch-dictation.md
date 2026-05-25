@@ -24,7 +24,7 @@ Run from repo root `/Users/genie/dev/side/VoiceInk`.
 
 `xcodegen generate` rewrites `VoiceInk.xcodeproj/project.pbxproj` (tracked in git) — commit it together with `project.yml` changes.
 
-> **Model/endpoint caveat:** Gemini model IDs and the `generateContent` path change often. Before Task 5, open the current Google AI (Gemini API) docs and confirm the model id (`gemini-3-flash` / `gemini-2.5-flash-lite`), the `v1beta/models/{model}:generateContent` path, the audio inline-data shape, and the `x-goog-api-key` header. Adjust the constants if they differ; the structure of the code stays the same.
+> **Model/endpoint — verified 2026-05-26.** The benchmark (`/tmp/voiceink-bench/bench_gemini.py`) confirmed against the live API with the user's key: model ids `gemini-3.5-flash` (default) and `gemini-2.5-flash` (economy) both accept audio via `POST v1beta/models/{model}:generateContent` with the `x-goog-api-key` header and inline `audio/wav` data, and honor `generationConfig.thinkingConfig.thinkingBudget = 0`. End-to-end latency for a 13.6s / 103-char Korean clip was ~2.0s (3.5-flash) and ~2.7s (2.5-flash) with thinking off. These constants are final unless the API changes.
 
 ---
 
@@ -644,7 +644,10 @@ final class GeminiPipelineTests: XCTestCase {
         let inline = parts?.first?["inline_data"] as? [String: Any]
         XCTAssertEqual(inline?["mime_type"] as? String, "audio/wav")
         XCTAssertNotNil(inline?["data"] as? String)
-        XCTAssertTrue((MockURLProtocol.lastURL?.absoluteString ?? "").contains("gemini-3-flash:generateContent"))
+        XCTAssertTrue((MockURLProtocol.lastURL?.absoluteString ?? "").contains("gemini-3.5-flash:generateContent"))
+        let genConfig = obj["generationConfig"] as? [String: Any]
+        let thinking = genConfig?["thinkingConfig"] as? [String: Any]
+        XCTAssertEqual(thinking?["thinkingBudget"] as? Int, 0)
     }
 
     func testHTTPErrorThrows() async {
@@ -678,14 +681,17 @@ Create `VoiceInk/Pipeline/GeminiPipeline.swift`:
 ```swift
 import Foundation
 
+// Model ids + latency confirmed by the 2026-05-26 benchmark (13.6s / 103-char Korean
+// clip, thinking OFF): gemini-3.5-flash ~2.0s with the best cleanup quality;
+// gemini-2.5-flash ~2.7s. The flash-lite tier produced poor cleanup and is excluded.
 enum GeminiModel: String, CaseIterable {
-    case flash = "gemini-3-flash"
-    case flashLite = "gemini-2.5-flash-lite"
+    case flash = "gemini-3.5-flash"        // default — best cleanup quality, ~2.0s
+    case flashEconomy = "gemini-2.5-flash" // economy — good quality, ~2.7s
 
     var displayName: String {
         switch self {
-        case .flash: return "Gemini 3 Flash (best quality)"
-        case .flashLite: return "Gemini 2.5 Flash-Lite (economy)"
+        case .flash: return "Gemini 3.5 Flash (recommended)"
+        case .flashEconomy: return "Gemini 2.5 Flash (economy)"
         }
     }
 }
@@ -710,12 +716,15 @@ final class GeminiPipeline: SpeechPipeline {
         let wav = WAVEncoder.encode(pcm16: audio.pcm16, sampleRate: audio.sampleRate)
         let base64 = wav.base64EncodedString()
 
+        // thinkingBudget: 0 disables Gemini's reasoning step — the benchmark showed it
+        // cuts latency ~4x (and removes 13s spikes) with no quality loss for cleanup.
         let body: [String: Any] = [
             "system_instruction": ["parts": [["text": mode.systemPrompt]]],
             "contents": [[
                 "role": "user",
                 "parts": [["inline_data": ["mime_type": "audio/wav", "data": base64]]]
-            ]]
+            ]],
+            "generationConfig": ["thinkingConfig": ["thinkingBudget": 0]]
         ]
 
         let urlString = "https://generativelanguage.googleapis.com/v1beta/models/\(model().rawValue):generateContent"
