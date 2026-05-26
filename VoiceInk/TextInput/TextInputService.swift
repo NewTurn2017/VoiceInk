@@ -26,7 +26,11 @@ final class TextInputService {
             copyToClipboard(text)
             return .copiedToClipboard
         }
-        if focusedElementIsEditable() {
+        // Paste-first: if any app element is focused, synthesize ⌘V so the text lands
+        // at the cursor. This works even in GPU/Electron apps (terminals, VS Code,
+        // browsers) that don't expose a standard editable AX role. The clipboard modal
+        // is reserved for "nothing is focused" (e.g. the Finder desktop).
+        if hasFocusedElement() {
             paste(text)
             return .pasted
         }
@@ -36,32 +40,14 @@ final class TextInputService {
 
     // MARK: - Private
 
-    private func focusedElementIsEditable() -> Bool {
+    /// True when some app currently owns a focused UI element (i.e. there's a place
+    /// for a ⌘V paste to land). False on the bare desktop / when nothing is focused.
+    private func hasFocusedElement() -> Bool {
         let system = AXUIElementCreateSystemWide()
         var focused: AnyObject?
         let err = AXUIElementCopyAttributeValue(system, kAXFocusedUIElementAttribute as CFString, &focused)
         guard err == .success, let focused = focused else { return false }
-        guard CFGetTypeID(focused) == AXUIElementGetTypeID() else { return false }
-        let element = focused as! AXUIElement
-
-        var roleValue: AnyObject?
-        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleValue)
-        if Self.isEditableRole(roleValue as? String) { return true }
-
-        // Web inputs and many custom fields expose a settable value.
-        var settable: DarwinBoolean = false
-        AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable)
-        if settable.boolValue { return true }
-
-        // Terminals, code editors, and rich text views expose a selected-text range
-        // even when their role isn't one of the standard text roles. Treat that as a
-        // text insertion point so dictation pastes at the cursor instead of falling
-        // back to the clipboard modal.
-        var selRange: AnyObject?
-        if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &selRange) == .success {
-            return true
-        }
-        return false
+        return CFGetTypeID(focused) == AXUIElementGetTypeID()
     }
 
     private func paste(_ text: String) {
