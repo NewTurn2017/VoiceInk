@@ -106,12 +106,20 @@ jobs:
             codesign --force --options runtime --timestamp --sign "$IDENTITY" "$component" 2>/dev/null || true
           done
 
-          # 3. Re-sign the main app last
-          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+          # 3. Re-sign the main app last — WITH entitlements. Without --entitlements,
+          #    --force strips them, and a hardened-runtime app with no
+          #    com.apple.security.device.audio-input entitlement cannot access the mic.
+          ENTITLEMENTS="$GITHUB_WORKSPACE/VoiceInk/Resources/VoiceInk.entitlements"
+          codesign --force --options runtime --timestamp \
+            --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP"
 
-          # Verify code signature
+          # Verify signature AND that the microphone entitlement survived.
           codesign --verify --deep --strict "$APP"
-          echo "✅ Code signature verified (including Sparkle components)"
+          if codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q "com.apple.security.device.audio-input"; then
+            echo "✅ Code signature + microphone entitlement verified"
+          else
+            echo "❌ microphone entitlement missing after signing"; exit 1
+          fi
 
       # ─── Notarize ───
       - name: Notarize app
