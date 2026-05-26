@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @MainActor
@@ -6,6 +7,7 @@ final class AppState: ObservableObject {
     @Published var audioLevel: Float = 0
     @Published var showAlert = false
     @Published var alertMessage = ""
+    @Published var accessibilityGranted = false
 
     /// Single source of truth for the model is UserDefaults["geminiModel"], written by
     /// the Settings @AppStorage picker. Read-only convenience for display.
@@ -20,6 +22,7 @@ final class AppState: ObservableObject {
     private let resultModal = ResultModalController()
     let historyManager = TranscriptHistoryManager()
     private var controller: DictationController!
+    private var accessibilityTimer: Timer?
 
     static var isRunningTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
@@ -72,6 +75,8 @@ final class AppState: ObservableObject {
         }
 
         AccessibilityHelper.requestPermissionIfNeeded()
+        self.accessibilityGranted = AccessibilityHelper.isGranted
+        observeAccessibility()
     }
 
     func toggle(mode: DictationMode = .cleanup) {
@@ -106,6 +111,35 @@ final class AppState: ObservableObject {
         alert.addButton(withTitle: "OK")
         if alert.runModal() == .alertFirstButtonReturn {
             NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        }
+    }
+
+    // MARK: - Accessibility permission
+
+    private func observeAccessibility() {
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
+                                               object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.refreshAccessibility() }
+        }
+        if !accessibilityGranted {
+            accessibilityTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+                Task { @MainActor in self?.refreshAccessibility() }
+            }
+        }
+    }
+
+    private func refreshAccessibility() {
+        let granted = AccessibilityHelper.isGranted
+        if granted != accessibilityGranted { accessibilityGranted = granted }
+        if granted { accessibilityTimer?.invalidate(); accessibilityTimer = nil }
+    }
+
+    func relaunch() {
+        let url = Bundle.main.bundleURL
+        let config = NSWorkspace.OpenConfiguration()
+        config.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: url, configuration: config) { _, _ in
+            DispatchQueue.main.async { NSApp.terminate(nil) }
         }
     }
 }

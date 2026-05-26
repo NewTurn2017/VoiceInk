@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceManagement
+import AVFoundation
 
 struct SettingsView: View {
     @EnvironmentObject var updaterManager: UpdaterManager
@@ -24,6 +25,7 @@ struct SettingsView: View {
 
 struct GeneralSettingsTab: View {
     @EnvironmentObject var updaterManager: UpdaterManager
+    @EnvironmentObject var appState: AppState
     @AppStorage("launchAtLogin") private var launchAtLogin = false
 
     var body: some View {
@@ -32,6 +34,26 @@ struct GeneralSettingsTab: View {
                 Toggle("Launch at Login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, newValue in setLaunchAtLogin(newValue) }
             } header: { Text("Startup") }
+
+            Section {
+                LabeledContent("Accessibility") {
+                    Label(appState.accessibilityGranted ? "Granted" : "Not granted",
+                          systemImage: appState.accessibilityGranted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(appState.accessibilityGranted ? .green : .orange)
+                        .labelStyle(.titleAndIcon)
+                }
+                LabeledContent("Microphone") {
+                    let granted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+                    Label(granted ? "Granted" : "Not granted",
+                          systemImage: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(granted ? .green : .orange)
+                        .labelStyle(.titleAndIcon)
+                }
+                Button("Open Accessibility Settings…") { AccessibilityHelper.openAccessibilitySettings() }
+                Button("Restart VoiceInk") { appState.relaunch() }
+                Text("If insertion goes to the clipboard modal instead of the cursor, enable Accessibility and restart.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } header: { Text("Permissions") }
 
             Section {
                 LabeledContent("Clean up dictation", value: "⌥ Space")

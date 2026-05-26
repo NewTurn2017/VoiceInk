@@ -8,6 +8,15 @@ struct MenuBarView: View {
         VStack {
             Label(statusText, systemImage: statusIcon)
 
+            if !appState.accessibilityGranted {
+                Divider()
+                Text("⚠️ Accessibility required to type at the cursor")
+                    .font(.caption).foregroundStyle(.orange)
+                Button("Open Accessibility Settings…") { AccessibilityHelper.openAccessibilitySettings() }
+                Text("After enabling, restart VoiceInk.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+
             Divider()
 
             Button(appState.isRecording ? "Stop" : "Clean Up Dictation") {
@@ -60,6 +69,10 @@ struct MenuBarView: View {
                 openSettings()
             }
             .keyboardShortcut(",")
+
+            Divider()
+
+            Button("Restart VoiceInk") { appState.relaunch() }
 
             Button("Quit VoiceInk") {
                 NSApplication.shared.terminate(nil)
