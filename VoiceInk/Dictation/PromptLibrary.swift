@@ -20,6 +20,8 @@ enum PromptLibrary {
     - When the speech enumerates items or steps, format them as a bullet or numbered list.
     - Keep the original language of the speech.
     - Make the result clean enough to paste directly as a prompt to an AI coding agent.
+    - If the audio has no discernible speech (only silence or background noise), \
+    output an empty string and nothing else. Never invent or guess content.
 
     Output ONLY the cleaned text. No preamble, no explanation, no markdown code fences.
     """

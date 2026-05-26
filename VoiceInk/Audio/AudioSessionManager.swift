@@ -137,6 +137,21 @@ final class AudioSessionManager {
         }
     }
 
+    /// Peak absolute amplitude (0...1) over the buffer. Used to tell speech from
+    /// silence: real speech peaks well above the noise floor, so a low peak means
+    /// the recording was effectively silent.
+    static func peakAmplitude(ofInt16 data: Data) -> Float {
+        data.withUnsafeBytes { raw -> Float in
+            guard let base = raw.baseAddress else { return 0 }
+            let samples = base.assumingMemoryBound(to: Int16.self)
+            let count = data.count / 2
+            guard count > 0 else { return 0 }
+            var peak: Int32 = 0
+            for i in 0..<count { peak = max(peak, abs(Int32(samples[i]))) }
+            return Float(peak) / Float(Int16.max)
+        }
+    }
+
     // MARK: - Reconnection
 
     private func setupNotifications() {

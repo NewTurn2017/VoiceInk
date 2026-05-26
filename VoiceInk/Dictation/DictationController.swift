@@ -77,10 +77,20 @@ final class DictationController {
         })
     }
 
+    /// Peak amplitude (0...1) below which a recording is treated as silence and
+    /// cancelled without calling the model. Real speech peaks far above this; this
+    /// also avoids the LLM hallucinating text from silent/near-silent audio.
+    private let silencePeakThreshold: Float = 0.03
+
     private func stopAndProcess() {
         let captured = audioManager.stopCapture()
         // Ignore very short / empty recordings (< ~0.2s at 16k * 2 bytes/sample).
         guard captured.count > sampleRate * 2 / 5 else {
+            status = .idle
+            return
+        }
+        // Cancel immediately if the user didn't actually speak (silence/noise only).
+        guard AudioSessionManager.peakAmplitude(ofInt16: captured) >= silencePeakThreshold else {
             status = .idle
             return
         }
@@ -100,6 +110,9 @@ final class DictationController {
                         : "Enable Accessibility in System Settings to insert at the cursor automatically."
                     resultModal.show(text: text, note: note)
                 }
+                status = .idle
+            } catch PipelineError.noText {
+                // No discernible speech — cancel quietly instead of showing an error.
                 status = .idle
             } catch {
                 let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
