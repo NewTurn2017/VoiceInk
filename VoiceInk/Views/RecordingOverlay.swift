@@ -9,17 +9,7 @@ struct RecordingOverlayView: View {
             .fixedSize()                       // size to content — never truncate
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [.white.opacity(0.4), .white.opacity(0.08)],
-                            startPoint: .top, endPoint: .bottom
-                        ),
-                        lineWidth: 1
-                    )
-            )
+            .liquidGlass(in: Capsule(style: .continuous))
             .shadow(color: .black.opacity(0.22), radius: 12, y: 4)
             .opacity(shown ? 1 : 0)
             .scaleEffect(shown ? 1 : 0.9, anchor: .top)

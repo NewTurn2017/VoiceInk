@@ -16,17 +16,7 @@ struct ResultModalView: View {
         }
         .padding(18)
         .frame(width: 400)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [.white.opacity(0.35), .white.opacity(0.05)],
-                        startPoint: .top, endPoint: .bottom
-                    ),
-                    lineWidth: 1
-                )
-        )
+        .liquidGlass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: .black.opacity(0.30), radius: 26, y: 12)
         .padding(24)
         .opacity(shown ? 1 : 0)
@@ -68,7 +58,7 @@ struct ResultModalView: View {
         }
         .frame(maxHeight: 200)
         .padding(12)
-        .background(.black.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var footer: some View {

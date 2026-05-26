@@ -22,6 +22,7 @@
 		4FFA337AB13714A2C4DC3B7F /* SoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32703C0106237D1010CEBC9 /* SoundPlayer.swift */; };
 		5243AB0CB8DE9D3DA4B0212A /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BD38B68517183EED314C9FB /* SmokeTests.swift */; };
 		566F1C9D678EC1563E1DCFAC /* GeminiPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C9AD9F7765C93B0EE6212E /* GeminiPipelineTests.swift */; };
+		5986CF319154C41C24C9C190 /* GlassBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646CE6F78896CF74CCD77E25 /* GlassBackground.swift */; };
 		5BCFE26AE9D79BCA7436B436 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A3957570C3BDB137E3FAD10 /* MockURLProtocol.swift */; };
 		735EF0A9B938AFC9E6EB2C74 /* PromptLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEF9532F07A25E8CEFC21DB /* PromptLibraryTests.swift */; };
 		85980678957B19974887C498 /* WAVEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE141E9A7EE77E9E982C92D4 /* WAVEncoderTests.swift */; };
@@ -61,6 +62,7 @@
 		4BD38B68517183EED314C9FB /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
 		50761F3537321A21EC0FF99F /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		54ABBD1B3BE3567832A9B909 /* TextInputService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputService.swift; sourceTree = "<group>"; };
+		646CE6F78896CF74CCD77E25 /* GlassBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBackground.swift; sourceTree = "<group>"; };
 		690A980BC3373AA553EE065D /* TranscriptHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptHistoryManager.swift; sourceTree = "<group>"; };
 		6C3205062FCDD540935B6B50 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		6D4B4AFAEE9047B95D079E83 /* WAVEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WAVEncoder.swift; sourceTree = "<group>"; };
@@ -192,6 +194,7 @@
 		BF20B6553AFE2645936A0189 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				646CE6F78896CF74CCD77E25 /* GlassBackground.swift */,
 				50761F3537321A21EC0FF99F /* MenuBarView.swift */,
 				D66DAFACA7D69C6476825D8F /* RecordingOverlay.swift */,
 				199EA699089EE027E432C012 /* ResultModal.swift */,
@@ -361,6 +364,7 @@
 				1D2BDFB50BBEF422000360FA /* DictationController.swift in Sources */,
 				3131BCD362E0B17FBEC95121 /* DictationMode.swift in Sources */,
 				2C0441FE1D4E9F6BF792B8C6 /* GeminiPipeline.swift in Sources */,
+				5986CF319154C41C24C9C190 /* GlassBackground.swift in Sources */,
 				A858E83262E7E33200409232 /* HotkeyManager.swift in Sources */,
 				CD1E234698D6B47D5D8DD115 /* KeychainManager.swift in Sources */,
 				F10F167269DF87038677B2C5 /* MenuBarView.swift in Sources */,
