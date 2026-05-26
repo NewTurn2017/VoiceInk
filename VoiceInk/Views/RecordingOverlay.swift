@@ -71,7 +71,7 @@ private struct Waveform: View {
             ForEach(0..<bars, id: \.self) { i in
                 Capsule()
                     .fill(
-                        LinearGradient(colors: [Color.accentColor, Color.accentColor.opacity(0.7)],
+                        LinearGradient(colors: [MetalPalette.silver, MetalPalette.bronze],
                                        startPoint: .top, endPoint: .bottom)
                     )
                     .frame(width: 3, height: barHeight(i))
@@ -96,7 +96,7 @@ private struct ThinkingDots: View {
         HStack(spacing: 4) {
             ForEach(0..<3, id: \.self) { i in
                 Circle()
-                    .fill(.primary.opacity(0.75))
+                    .fill(MetalPalette.silver.opacity(0.9))
                     .frame(width: 5, height: 5)
                     .scaleEffect(animating ? 1 : 0.5)
                     .opacity(animating ? 1 : 0.35)
