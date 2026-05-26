@@ -25,17 +25,25 @@ private struct MetallicGlass: ViewModifier {
         )
     }
 
-    @ViewBuilder
     func body(content: Content) -> some View {
+        // `glassEffect` only exists in the macOS 26 SDK (Xcode 26 / Swift 6.2+). The
+        // `#if compiler` guard keeps this file compiling on older toolchains (e.g. an
+        // older CI Xcode), where it falls back to a frosted material. When built with
+        // Xcode 26, the `#available` check picks real Liquid Glass at runtime.
+        #if compiler(>=6.2)
         if #available(macOS 26.0, *) {
-            content
-                .glassEffect(.regular.tint(MetalPalette.tint.opacity(0.42)), in: shape)
-                .overlay(shape.stroke(sheen, lineWidth: 1))
-        } else {
+            return AnyView(
+                content
+                    .glassEffect(.regular.tint(MetalPalette.tint.opacity(0.42)), in: shape)
+                    .overlay(shape.stroke(sheen, lineWidth: 1))
+            )
+        }
+        #endif
+        return AnyView(
             content
                 .background(.ultraThinMaterial, in: shape)
                 .background(MetalPalette.tint.opacity(0.16), in: shape)
                 .overlay(shape.stroke(sheen, lineWidth: 1))
-        }
+        )
     }
 }
