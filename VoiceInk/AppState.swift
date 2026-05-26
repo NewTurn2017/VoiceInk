@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import SwiftUI
 
 @MainActor
@@ -8,6 +9,7 @@ final class AppState: ObservableObject {
     @Published var showAlert = false
     @Published var alertMessage = ""
     @Published var accessibilityGranted = false
+    @Published var microphoneGranted = false
 
     /// Single source of truth for the model is UserDefaults["geminiModel"], written by
     /// the Settings @AppStorage picker. Read-only convenience for display.
@@ -75,8 +77,8 @@ final class AppState: ObservableObject {
         }
 
         AccessibilityHelper.requestPermissionIfNeeded()
-        self.accessibilityGranted = AccessibilityHelper.isGranted
-        observeAccessibility()
+        refreshPermissions()
+        observePermissions()
     }
 
     func toggle(mode: DictationMode = .cleanup) {
@@ -114,24 +116,42 @@ final class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Accessibility permission
+    // MARK: - Permissions (Accessibility + Microphone)
 
-    private func observeAccessibility() {
+    private func observePermissions() {
+        // Re-check when returning from System Settings.
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
                                                object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.refreshAccessibility() }
+            Task { @MainActor in self?.refreshPermissions() }
         }
-        if !accessibilityGranted {
+        // Poll while either permission is still missing (TCC can change without a relaunch).
+        if !accessibilityGranted || !microphoneGranted {
             accessibilityTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-                Task { @MainActor in self?.refreshAccessibility() }
+                Task { @MainActor in self?.refreshPermissions() }
             }
         }
     }
 
-    private func refreshAccessibility() {
-        let granted = AccessibilityHelper.isGranted
-        if granted != accessibilityGranted { accessibilityGranted = granted }
-        if granted { accessibilityTimer?.invalidate(); accessibilityTimer = nil }
+    private func refreshPermissions() {
+        let ax = AccessibilityHelper.isGranted
+        if ax != accessibilityGranted { accessibilityGranted = ax }
+
+        let mic = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+        if mic != microphoneGranted { microphoneGranted = mic }
+
+        if ax && mic { accessibilityTimer?.invalidate(); accessibilityTimer = nil }
+    }
+
+    /// Triggers the system microphone prompt if not yet determined; otherwise no-op
+    /// (a denied permission can only be changed in System Settings).
+    func requestMicrophone() {
+        AVCaptureDevice.requestAccess(for: .audio) { [weak self] _ in
+            Task { @MainActor in self?.refreshPermissions() }
+        }
+    }
+
+    func openMicrophoneSettings() {
+        AccessibilityHelper.openMicrophoneSettings()
     }
 
     func relaunch() {

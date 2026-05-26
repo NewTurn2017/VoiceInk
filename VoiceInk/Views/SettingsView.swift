@@ -82,15 +82,20 @@ struct GeneralSettingsTab: View {
                         .labelStyle(.titleAndIcon)
                 }
                 LabeledContent("Microphone") {
-                    let granted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
-                    Label(granted ? "Granted" : "Not granted",
-                          systemImage: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(granted ? .green : .orange)
+                    Label(appState.microphoneGranted ? "Granted" : "Not granted",
+                          systemImage: appState.microphoneGranted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(appState.microphoneGranted ? .green : .orange)
                         .labelStyle(.titleAndIcon)
                 }
-                Button("Open Accessibility Settings…") { AccessibilityHelper.openAccessibilitySettings() }
+                if !appState.accessibilityGranted {
+                    Button("Open Accessibility Settings…") { AccessibilityHelper.openAccessibilitySettings() }
+                }
+                if !appState.microphoneGranted {
+                    Button("Request Microphone Access") { appState.requestMicrophone() }
+                    Button("Open Microphone Settings…") { appState.openMicrophoneSettings() }
+                }
                 Button("Restart VoiceInk") { appState.relaunch() }
-                Text("If insertion goes to the clipboard modal instead of the cursor, enable Accessibility and restart.")
+                Text("Accessibility lets VoiceInk type at the cursor; Microphone lets it record. Status updates automatically; after changing a permission you may need to Restart VoiceInk.")
                     .font(.caption).foregroundStyle(.secondary)
             } header: { Text("Permissions") }
 
