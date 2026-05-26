@@ -25,7 +25,18 @@ enum PipelineError: LocalizedError, Equatable {
     }
 }
 
+struct TokenUsage: Equatable {
+    var audioInputTokens: Int = 0
+    var textInputTokens: Int = 0
+    var outputTokens: Int = 0
+}
+
+struct PipelineResult {
+    let text: String
+    let usage: TokenUsage?
+}
+
 protocol SpeechPipeline {
     /// Process recorded audio into cleaned text. Throws `PipelineError` on failure.
-    func process(_ audio: RecordedAudio, mode: DictationMode) async throws -> String
+    func process(_ audio: RecordedAudio, mode: DictationMode) async throws -> PipelineResult
 }

@@ -16,8 +16,47 @@ struct SettingsView: View {
 
             APIKeysSettingsTab()
                 .tabItem { Label("API Key", systemImage: "key") }
+
+            UsageSettingsTab()
+                .tabItem { Label("Usage", systemImage: "dollarsign.circle") }
         }
         .frame(width: 480, height: 320)
+    }
+}
+
+// MARK: - Usage
+
+struct UsageSettingsTab: View {
+    @ObservedObject private var tracker = CostTracker.shared
+    @State private var confirmReset = false
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Estimated cost") {
+                    Text(String(format: "$%.4f", tracker.totalCostUSD))
+                        .font(.system(.body, design: .monospaced)).bold()
+                }
+                LabeledContent("Dictations", value: "\(tracker.callCount)")
+            } header: { Text("API Usage") } footer: {
+                Text("Estimated from Gemini's reported token usage and listed pricing (thinking off). Actual billing may differ.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section {
+                LabeledContent("Audio input tokens", value: tracker.audioInputTokens.formatted())
+                LabeledContent("Text input tokens", value: tracker.textInputTokens.formatted())
+                LabeledContent("Output tokens", value: tracker.outputTokens.formatted())
+            } header: { Text("Tokens") }
+            Section {
+                Button("Reset usage", role: .destructive) { confirmReset = true }
+                    .confirmationDialog("Reset the usage counter?", isPresented: $confirmReset) {
+                        Button("Reset", role: .destructive) { tracker.reset() }
+                        Button("Cancel", role: .cancel) {}
+                    }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
     }
 }
 

@@ -100,11 +100,15 @@ final class DictationController {
 
         Task { @MainActor in
             do {
-                let text = try await pipeline.process(audio, mode: mode)
-                let result = textInput.insert(text)
+                let result = try await pipeline.process(audio, mode: mode)
+                let text = result.text
+                let insertResult = textInput.insert(text)
+                if let usage = result.usage {
+                    CostTracker.shared.record(usage: usage, model: .current)
+                }
                 history.add(text: text.trimmingCharacters(in: .whitespacesAndNewlines),
                             engineType: mode.displayName)
-                if result == .copiedToClipboard {
+                if insertResult == .copiedToClipboard {
                     let note = AccessibilityHelper.isGranted
                         ? "No text field was focused — paste anywhere with ⌘V."
                         : "Enable Accessibility in System Settings to insert at the cursor automatically."

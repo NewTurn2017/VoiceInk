@@ -33,7 +33,7 @@ final class GeminiPipeline: SpeechPipeline {
         self.session = session
     }
 
-    func process(_ audio: RecordedAudio, mode: DictationMode) async throws -> String {
+    func process(_ audio: RecordedAudio, mode: DictationMode) async throws -> PipelineResult {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw PipelineError.missingAPIKey }
         guard !audio.pcm16.isEmpty else { throw PipelineError.emptyAudio }
 
@@ -74,10 +74,10 @@ final class GeminiPipeline: SpeechPipeline {
             let snippet = String(data: data.prefix(300), encoding: .utf8) ?? ""
             throw PipelineError.http(http.statusCode, snippet)
         }
-        return try Self.parseText(from: data)
+        return try Self.parseResult(from: data)
     }
 
-    static func parseText(from data: Data) throws -> String {
+    static func parseResult(from data: Data) throws -> PipelineResult {
         guard let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
             throw PipelineError.decoding("not JSON")
         }
@@ -87,8 +87,33 @@ final class GeminiPipeline: SpeechPipeline {
             throw PipelineError.noText
         }
         let text = parts.compactMap { $0["text"] as? String }.joined()
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw PipelineError.noText }
-        return trimmed
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { throw PipelineError.noText }
+        return PipelineResult(text: text, usage: parseUsage(from: json))
     }
+
+    static func parseUsage(from json: [String: Any]) -> TokenUsage? {
+        guard let meta = json["usageMetadata"] as? [String: Any] else { return nil }
+        let promptTotal = meta["promptTokenCount"] as? Int ?? 0
+        let output = meta["candidatesTokenCount"] as? Int ?? 0
+        var audio = 0, text = 0
+        if let details = meta["promptTokensDetails"] as? [[String: Any]] {
+            for d in details {
+                let count = d["tokenCount"] as? Int ?? 0
+                switch (d["modality"] as? String)?.uppercased() {
+                case "AUDIO": audio += count
+                case "TEXT":  text += count
+                default:      text += count
+                }
+            }
+        }
+        if audio == 0 && text == 0 { audio = promptTotal } // no breakdown → attribute to audio (conservative)
+        return TokenUsage(audioInputTokens: audio, textInputTokens: text, outputTokens: output)
+    }
+}
+
+extension GeminiModel {
+    var audioInputPricePerM: Double { switch self { case .flash: return 1.50; case .flashEconomy: return 1.00 } }
+    var textInputPricePerM: Double  { switch self { case .flash: return 1.50; case .flashEconomy: return 0.30 } }
+    var outputPricePerM: Double     { switch self { case .flash: return 9.00; case .flashEconomy: return 2.50 } }
 }

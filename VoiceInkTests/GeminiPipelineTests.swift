@@ -37,7 +37,7 @@ final class GeminiPipelineTests: XCTestCase {
         }
         let pipeline = makePipeline()
         let result = try await pipeline.process(audio, mode: .cleanup)
-        XCTAssertEqual(result, "- hello\n- world")
+        XCTAssertEqual(result.text, "- hello\n- world")
 
         // Request carried the api key header and a JSON body with the system prompt + inline audio.
         XCTAssertEqual(MockURLProtocol.lastHeaders?["x-goog-api-key"], "test-key")
@@ -81,6 +81,22 @@ final class GeminiPipelineTests: XCTestCase {
         }
         let pipeline = makePipeline()
         let result = try await pipeline.process(audio, mode: .cleanup)
-        XCTAssertEqual(result, "ab")
+        XCTAssertEqual(result.text, "ab")
+    }
+
+    func testParsesUsageMetadata() async throws {
+        MockURLProtocol.handler = { _, _ in
+            let json = """
+            {"candidates":[{"content":{"parts":[{"text":"hi"}]}}],
+             "usageMetadata":{"promptTokenCount":1100,"candidatesTokenCount":40,
+               "promptTokensDetails":[{"modality":"AUDIO","tokenCount":1000},{"modality":"TEXT","tokenCount":100}]}}
+            """
+            return (200, Data(json.utf8))
+        }
+        let pipeline = makePipeline()
+        let result = try await pipeline.process(audio, mode: .cleanup)
+        XCTAssertEqual(result.usage?.audioInputTokens, 1000)
+        XCTAssertEqual(result.usage?.textInputTokens, 100)
+        XCTAssertEqual(result.usage?.outputTokens, 40)
     }
 }
