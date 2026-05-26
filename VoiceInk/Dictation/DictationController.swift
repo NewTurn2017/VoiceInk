@@ -95,7 +95,10 @@ final class DictationController {
                 history.add(text: text.trimmingCharacters(in: .whitespacesAndNewlines),
                             engineType: mode.displayName)
                 if result == .copiedToClipboard {
-                    resultModal.show(text: text)
+                    let note = AccessibilityHelper.isGranted
+                        ? "No text field was focused — paste anywhere with ⌘V."
+                        : "Enable Accessibility in System Settings to insert at the cursor automatically."
+                    resultModal.show(text: text, note: note)
                 }
                 status = .idle
             } catch {

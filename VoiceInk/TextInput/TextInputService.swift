@@ -48,9 +48,20 @@ final class TextInputService {
         AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleValue)
         if Self.isEditableRole(roleValue as? String) { return true }
 
+        // Web inputs and many custom fields expose a settable value.
         var settable: DarwinBoolean = false
         AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable)
-        return settable.boolValue
+        if settable.boolValue { return true }
+
+        // Terminals, code editors, and rich text views expose a selected-text range
+        // even when their role isn't one of the standard text roles. Treat that as a
+        // text insertion point so dictation pastes at the cursor instead of falling
+        // back to the clipboard modal.
+        var selRange: AnyObject?
+        if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &selRange) == .success {
+            return true
+        }
+        return false
     }
 
     private func paste(_ text: String) {
