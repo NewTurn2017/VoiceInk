@@ -5,10 +5,10 @@ final class GeminiPipelineTests: XCTestCase {
     override func setUp() { super.setUp(); MockURLProtocol.reset() }
     override func tearDown() { MockURLProtocol.reset(); super.tearDown() }
 
-    private func makePipeline(key: String? = "test-key") -> GeminiPipeline {
+    private func makePipeline(key: String? = "test-key", model: GeminiModel = .flash) -> GeminiPipeline {
         GeminiPipeline(
             apiKeyProvider: { key },
-            model: { .flash },
+            model: { model },
             session: MockURLProtocol.makeSession()
         )
     }
@@ -51,10 +51,24 @@ final class GeminiPipelineTests: XCTestCase {
         let inline = parts?.first?["inline_data"] as? [String: Any]
         XCTAssertEqual(inline?["mime_type"] as? String, "audio/wav")
         XCTAssertNotNil(inline?["data"] as? String)
-        XCTAssertTrue((MockURLProtocol.lastURL?.absoluteString ?? "").contains("gemini-3.5-flash:generateContent"))
+        XCTAssertTrue((MockURLProtocol.lastURL?.absoluteString ?? "").contains("gemini-3.8-flash:generateContent"))
         let genConfig = obj["generationConfig"] as? [String: Any]
         let thinking = genConfig?["thinkingConfig"] as? [String: Any]
+        XCTAssertEqual(thinking?["thinkingLevel"] as? String, "low")
+        XCTAssertNil(thinking?["thinkingBudget"])
+    }
+
+    func testEconomyModelTurnsThinkingOff() async throws {
+        MockURLProtocol.handler = { _, _ in
+            (200, Data(#"{"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}"#.utf8))
+        }
+        _ = try await makePipeline(model: .flashEconomy).process(audio, mode: .cleanup)
+        XCTAssertTrue((MockURLProtocol.lastURL?.absoluteString ?? "").contains("gemini-2.5-flash:generateContent"))
+        let body = try XCTUnwrap(MockURLProtocol.lastBody)
+        let obj = try XCTUnwrap(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let thinking = (obj["generationConfig"] as? [String: Any])?["thinkingConfig"] as? [String: Any]
         XCTAssertEqual(thinking?["thinkingBudget"] as? Int, 0)
+        XCTAssertNil(thinking?["thinkingLevel"])
     }
 
     func testHTTPErrorThrows() async {
@@ -98,5 +112,25 @@ final class GeminiPipelineTests: XCTestCase {
         XCTAssertEqual(result.usage?.audioInputTokens, 1000)
         XCTAssertEqual(result.usage?.textInputTokens, 100)
         XCTAssertEqual(result.usage?.outputTokens, 40)
+    }
+
+    func testThinkingTokensCountAsOutput() async throws {
+        MockURLProtocol.handler = { _, _ in
+            let json = """
+            {"candidates":[{"content":{"parts":[{"text":"hi"}]}}],
+             "usageMetadata":{"promptTokenCount":500,"candidatesTokenCount":40,"thoughtsTokenCount":25}}
+            """
+            return (200, Data(json.utf8))
+        }
+        let result = try await makePipeline().process(audio, mode: .cleanup)
+        XCTAssertEqual(result.usage?.outputTokens, 65)
+    }
+
+    func testFlashLaunchDiscountEndsIn2027() throws {
+        let iso = ISO8601DateFormatter()
+        let lastDiscountedDay = try XCTUnwrap(iso.date(from: "2026-12-31T12:00:00Z"))
+        let firstListPriceDay = try XCTUnwrap(iso.date(from: "2027-01-01T12:00:00Z"))
+        XCTAssertEqual(GeminiModel.launchDiscount(on: lastDiscountedDay), 0.5)
+        XCTAssertEqual(GeminiModel.launchDiscount(on: firstListPriceDay), 1.0)
     }
 }

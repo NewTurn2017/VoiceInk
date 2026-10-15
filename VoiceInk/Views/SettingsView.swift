@@ -39,7 +39,7 @@ struct UsageSettingsTab: View {
                 }
                 LabeledContent("Dictations", value: "\(tracker.callCount)")
             } header: { Text("API Usage") } footer: {
-                Text("Estimated from Gemini's reported token usage and listed pricing (thinking off). Actual billing may differ.")
+                Text("Estimated from Gemini's reported token usage and listed pricing. Output tokens include thinking. Actual billing may differ.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
@@ -136,9 +136,13 @@ struct ModelSettingsTab: View {
     var body: some View {
         Form {
             Section {
-                Picker("Gemini Model", selection: $geminiModelRaw) {
-                    ForEach(GeminiModel.allCases, id: \.rawValue) { model in
-                        Text(model.displayName).tag(model.rawValue)
+                // A stored id that's no longer offered (e.g. gemini-3.5-flash) shows the
+                // default, matching what GeminiModel.current actually uses.
+                Picker("Gemini Model", selection: Binding(
+                    get: { GeminiModel(rawValue: geminiModelRaw) ?? .flash },
+                    set: { geminiModelRaw = $0.rawValue })) {
+                    ForEach(GeminiModel.allCases, id: \.self) { model in
+                        Text(model.displayName).tag(model)
                     }
                 }
                 Text("Audio is transcribed, cleaned up, and (optionally) translated in a single Gemini call. Korean is the primary language.")
