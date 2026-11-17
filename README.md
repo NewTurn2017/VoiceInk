@@ -4,15 +4,40 @@
 
 # VoiceInk
 
-**말하면 — 정리된 텍스트로. Gemini 기반 macOS 받아쓰기**
+**말하면 — 정리된 텍스트로. Gemini 기반 받아쓰기 · macOS & iPhone**
 
-[![Download](https://img.shields.io/badge/Download-DMG-blue?logo=apple&logoColor=white&style=for-the-badge)](https://github.com/NewTurn2017/VoiceInk/releases/latest/download/VoiceInk.dmg)
+[![Download for macOS](https://img.shields.io/badge/macOS-Download_DMG-blue?logo=apple&logoColor=white&style=for-the-badge)](https://github.com/NewTurn2017/VoiceInk/releases/latest/download/VoiceInk.dmg)
+[![Download on the App Store](https://img.shields.io/badge/iPhone-App_Store-black?logo=appstore&logoColor=white&style=for-the-badge)](https://apps.apple.com/kr/app/voiceink/id6775438403)
 
 [![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B-blue?logo=apple&logoColor=white)](#requirements)
+[![iOS 26+](https://img.shields.io/badge/iOS-26.0%2B-black?logo=apple&logoColor=white)](#voiceink-for-iphone)
 [![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange?logo=swift&logoColor=white)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
+
+---
+
+## VoiceInk for iPhone
+
+> **[⬇︎ App Store에서 받기](https://apps.apple.com/kr/app/voiceink/id6775438403)** · 무료 · iPhone 전용 · iOS 26.0 이상
+
+**말하면 정리되어 입력되는 AI 키보드.** iPhone에서는 VoiceInk이 **시스템 키보드**로 동작합니다(설치 후 홈 화면과 키보드 목록에는 **WithVoice**로 표시됩니다). 메시지·메모·메일·Slack·브라우저 등 글자를 입력하는 모든 앱에서 마이크를 누르고 말하면, Gemini가 정리한 문장이 커서 위치에 들어갑니다.
+
+- **원문 전사가 아닌 정리된 결과물** — "음", "어", 말 더듬기를 걷어내고 문장 부호까지 다듬습니다. 말하다 고친 부분과 목록도 정리합니다.
+- **한/영 통합 키보드** — `한/A` 버튼 하나로 전환합니다. 표준 두벌식 자판이라 받침·겹받침·이중모음까지 그대로 입력되고, 마이크 버튼은 두 언어에서 같은 자리에 있습니다.
+- **어느 앱에서나** — 텍스트 입력란이 있는 곳이면 동작합니다.
+- **끊겨도 안전하게** — 이어폰 연결이 바뀌거나 전화가 와도 그때까지 말한 내용을 정리합니다. 받아쓴 글은 완료 화면에서 바로 복사할 수 있습니다.
+- **키보드 햅틱 · VoiceOver 지원** — 햅틱은 설정에서 끌 수 있습니다.
+- **Bring your own key** — 본인의 Gemini API 키를 기기 Keychain에 저장해 씁니다. 계정·광고·제3자 분석 도구가 없고, 음성과 텍스트는 Google Gemini API로만 전송됩니다. ([개인정보 처리방침](https://newturn2017.github.io/voiceink-site/privacy))
+
+**시작하기**
+
+1. [Google AI Studio](https://aistudio.google.com)에서 Gemini API 키를 발급받아 앱 설정에 붙여넣습니다.
+2. iPhone 설정에서 **WithVoice** 키보드를 추가하고 마이크 접근을 허용합니다.
+3. 키보드를 WithVoice로 바꾸고 `한/A`로 언어를 고른 뒤, 마이크를 누르고 말합니다.
+
+> 이 저장소에는 macOS 앱 소스가 들어 있습니다. 아래 내용은 macOS 버전 기준입니다.
 
 ---
 
@@ -146,6 +171,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 <div align="center">
 
-**Made with ❤️ for macOS**
+**Made with ❤️ for macOS & iPhone**
 
 </div>
